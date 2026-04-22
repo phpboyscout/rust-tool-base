@@ -1,0 +1,24 @@
+[package]
+name = "rtb-config"
+description = "Rust Tool Base — layered, typed configuration backed by figment."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+figment = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror = { workspace = true }
+miette = { workspace = true }
+tracing = { workspace = true }
+notify = { workspace = true }
+notify-debouncer-full = { workspace = true }
+arc-swap = { workspace = true }
+schemars = { workspace = true }

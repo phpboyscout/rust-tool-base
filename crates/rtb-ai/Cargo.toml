@@ -1,0 +1,29 @@
+[package]
+name = "rtb-ai"
+description = "Rust Tool Base — unified AI client for Claude, OpenAI, Gemini, and OpenAI-compatible endpoints."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rtb-core = { path = "../rtb-core", version = "0.1.0" }
+rtb-error = { path = "../rtb-error", version = "0.1.0" }
+genai = { workspace = true }
+async-openai = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+schemars = { workspace = true }
+jsonschema = { workspace = true }
+miette = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+secrecy = { workspace = true }

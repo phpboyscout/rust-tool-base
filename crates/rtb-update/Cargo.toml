@@ -1,0 +1,27 @@
+[package]
+name = "rtb-update"
+description = "Rust Tool Base — self-update subsystem."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rtb-core = { path = "../rtb-core", version = "0.1.0" }
+rtb-error = { path = "../rtb-error", version = "0.1.0" }
+rtb-vcs = { path = "../rtb-vcs", version = "0.1.0" }
+self_update = { workspace = true }
+self-replace = { workspace = true }
+semver = { workspace = true }
+sha2 = { workspace = true }
+ed25519-dalek = { workspace = true }
+reqwest = { workspace = true }
+tokio = { workspace = true }
+miette = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }

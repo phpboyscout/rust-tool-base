@@ -1,0 +1,28 @@
+/target
+/examples/*/target
+**/*.rs.bk
+Cargo.lock.bak
+
+# Editor / IDE
+/.idea
+/.vscode
+*.iml
+
+# Local Claude Code overrides (permissions, etc.) — project-level settings.json is committed
+.claude/settings.local.json
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local-only config / secrets
+.env
+.env.local
+*.local.toml
+*.local.yaml
+/config.yaml
+
+# Coverage
+/tarpaulin-report.html
+/lcov.info
+/coverage

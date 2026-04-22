@@ -1,0 +1,16 @@
+# Default configuration embedded into every rtb-based tool.
+# Downstream tools override by placing a config.yaml alongside their binary,
+# in ~/.<tool>/config.yaml, or by setting <PREFIX>_<KEY> environment variables.
+
+# Log level: trace | debug | info | warn | error
+log:
+  level: info
+  format: pretty   # pretty | json | logfmt
+
+update:
+  # How often (hours) to check for a new release, -1 to disable.
+  check_interval: 24
+
+telemetry:
+  # Users must opt in explicitly at first run.
+  enabled: false

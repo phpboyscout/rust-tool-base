@@ -1,0 +1,29 @@
+[package]
+name = "rtb-cli-bin"
+description = "The `rtb` command — scaffolder, regenerator, and framework toolbox."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "rtb"
+path = "src/main.rs"
+
+[lints]
+workspace = true
+
+[dependencies]
+rtb-core = { path = "../rtb-core", version = "0.1.0" }
+rtb-error = { path = "../rtb-error", version = "0.1.0" }
+clap = { workspace = true }
+tokio = { workspace = true }
+miette = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+minijinja = { workspace = true }
+inquire = { workspace = true }
+serde = { workspace = true }
+serde_yaml = { workspace = true }

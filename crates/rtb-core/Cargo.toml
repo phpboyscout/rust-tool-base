@@ -1,0 +1,24 @@
+[package]
+name = "rtb-core"
+description = "Rust Tool Base — core application context, service traits, and tool metadata."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rtb-error = { path = "../rtb-error", version = "0.1.0" }
+rtb-config = { path = "../rtb-config", version = "0.1.0" }
+rtb-assets = { path = "../rtb-assets", version = "0.1.0" }
+tracing = { workspace = true }
+tokio-util = { workspace = true }
+async-trait = { workspace = true }
+serde = { workspace = true }
+semver = { workspace = true }
+bon = { workspace = true }
+linkme = { workspace = true }

@@ -1,0 +1,21 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  dist:
+    name: cargo-dist
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      # cargo-dist (now `dist`) handles multi-platform release artefact builds.
+      # Configure it via `dist-workspace.toml` before enabling this workflow.
+      - run: echo "Configure cargo-dist before releasing"

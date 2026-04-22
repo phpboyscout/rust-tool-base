@@ -1,0 +1,154 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/rtb",
+    "crates/rtb-core",
+    "crates/rtb-config",
+    "crates/rtb-assets",
+    "crates/rtb-error",
+    "crates/rtb-cli",
+    "crates/rtb-update",
+    "crates/rtb-vcs",
+    "crates/rtb-ai",
+    "crates/rtb-mcp",
+    "crates/rtb-docs",
+    "crates/rtb-tui",
+    "crates/rtb-credentials",
+    "crates/rtb-telemetry",
+    "crates/rtb-cli-bin",
+    "examples/minimal",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.82"
+license = "MIT"
+authors = ["Matt Cockayne <matt@phpboyscout.com>"]
+repository = "https://github.com/phpboyscout/rust-tool-base"
+homepage = "https://rtb.phpboyscout.uk"
+documentation = "https://rtb.phpboyscout.uk"
+readme = "README.md"
+categories = ["command-line-interface", "development-tools"]
+keywords = ["cli", "framework", "scaffolding", "ai", "mcp"]
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+nursery = { level = "warn", priority = -1 }
+cargo = { level = "warn", priority = -1 }
+module_name_repetitions = "allow"
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+multiple_crate_versions = "allow"
+
+[workspace.dependencies]
+# Core async + util
+tokio = { version = "1.47", features = ["full"] }
+tokio-util = { version = "0.7", features = ["rt"] }
+futures = "0.3"
+async-trait = "0.1"
+
+# CLI
+clap = { version = "4.6", features = ["derive", "env", "wrap_help", "string"] }
+
+# Config
+figment = { version = "0.10", features = ["toml", "yaml", "json", "env"] }
+notify = "8"
+notify-debouncer-full = "0.6"
+arc-swap = "1.7"
+
+# Errors
+miette = { version = "7", features = ["fancy"] }
+thiserror = "2"
+
+# Logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json", "fmt"] }
+tracing-error = "0.2"
+
+# Serde ecosystem
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+toml = "0.8"
+schemars = "0.8"
+
+# Embedded assets + VFS
+rust-embed = { version = "8", features = ["debug-embed", "include-exclude"] }
+vfs = "0.12"
+
+# HTTP + TLS
+reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream", "gzip"] }
+url = "2"
+
+# TUI
+ratatui = "0.29"
+crossterm = "0.28"
+termimad = "0.33"
+inquire = "0.8"
+owo-colors = "4"
+console = "0.15"
+tabled = { version = "0.20", features = ["derive"] }
+
+# Secrets
+secrecy = "0.10"
+zeroize = "1"
+keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+
+# VCS
+gix = { version = "0.72", default-features = false, features = ["blocking-network-client", "blocking-http-transport-reqwest-rust-tls"] }
+octocrab = "0.47"
+gitlab = "0.1710"
+
+# Version + update
+semver = { version = "1", features = ["serde"] }
+self_update = { version = "0.42", default-features = false, features = ["rustls", "archive-tar", "archive-zip", "compression-flate2"] }
+self-replace = "1.5"
+ed25519-dalek = "2"
+
+# AI
+genai = "0.5"
+async-openai = "0.30"
+
+# MCP
+rmcp = "0.16"
+
+# Utilities
+directories = "5"
+machine-uid = "0.5"
+sha2 = "0.10"
+blake3 = "1"
+tar = "0.4"
+flate2 = "1"
+regex = "1"
+time = { version = "0.3", features = ["serde", "formatting", "parsing", "macros"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+once_cell = "1"
+bon = "3"
+linkme = "0.3"
+jsonschema = "0.31"
+minijinja = "2"
+json-patch = "3"
+
+# Observability
+opentelemetry = "0.31"
+opentelemetry_sdk = { version = "0.31", features = ["rt-tokio"] }
+opentelemetry-otlp = { version = "0.31", features = ["grpc-tonic"] }
+tracing-opentelemetry = "0.32"
+
+# HTTP / gRPC server (optional subcommands)
+axum = "0.8"
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+tower = "0.5"
+tower-http = { version = "0.6", features = ["trace", "cors"] }
+tonic = "0.14"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+opt-level = 3
