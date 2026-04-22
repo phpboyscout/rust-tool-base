@@ -33,7 +33,12 @@ categories = ["command-line-interface", "development-tools"]
 keywords = ["cli", "framework", "scaffolding", "ai", "mcp"]
 
 [workspace.lints.rust]
-unsafe_code = "forbid"
+# `deny` at workspace level so individual test files can `#![allow]`
+# when they genuinely need `unsafe` (e.g. Rust 2024's unsafe env mutation
+# for tests that exercise env-driven config). Every `src/lib.rs` (or
+# `src/main.rs`) must still ship `#![forbid(unsafe_code)]` — that is the
+# production guarantee.
+unsafe_code = "deny"
 missing_docs = "warn"
 
 [workspace.lints.clippy]

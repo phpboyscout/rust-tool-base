@@ -1,46 +1,49 @@
-//! Layered, typed configuration backed by `figment`.
+//! Typed, layered configuration backed by [`figment`].
 //!
 //! # Design
 //!
-//! The Go Tool Base config system exposes a dynamic `Containable` interface
-//! with `GetString("foo.bar")`-style accessors — a port of Viper. We
-//! deliberately do not mimic that. Rust's strength is in compile-time types,
-//! so `Config` is a generic container over **your** `serde::Deserialize`
-//! struct and precedence is composed with `figment::Figment`:
+//! The Go Tool Base config system exposes a dynamic `Containable`
+//! interface with `GetString("foo.bar")` accessors. We deliberately do
+//! not mimic that. Rust's strength is in compile-time types, so
+//! [`Config`] is a generic container over *your* `serde::Deserialize`
+//! struct:
 //!
-//! ```ignore
+//! ```
 //! use rtb_config::Config;
 //! use serde::Deserialize;
 //!
 //! #[derive(Deserialize, Default)]
 //! struct MyConfig { host: String, port: u16 }
 //!
-//! let cfg: Config<MyConfig> = Config::builder()
-//!     .embedded_default(include_str!("../assets/init/config.yaml"))
-//!     .user_file_yaml("~/.mytool/config.yaml")
+//! let cfg = Config::<MyConfig>::builder()
+//!     .embedded_default(concat!(
+//!         "host: localhost\n",
+//!         "port: 8080\n",
+//!     ))
 //!     .env_prefixed("MYTOOL_")
-//!     .watch(true)   // hot reload via notify
-//!     .build()?;
+//!     .build()
+//!     .expect("config layers are consistent");
+//!
+//! let current = cfg.get();
+//! assert_eq!(current.host, "localhost");
 //! ```
 //!
-//! Hot-reload uses `notify-debouncer-full` and atomically swaps the parsed
-//! value via `arc_swap::ArcSwap`. Subscribers call `cfg.subscribe()` to get a
-//! `watch::Receiver<Arc<T>>` and react to changes the Rust way.
+//! # What v0.1 ships
+//!
+//! * Typed [`Config<C>`] with `C` defaulting to `()` so rtb-core's
+//!   `Arc<Config>` field keeps working without a type parameter.
+//! * [`ConfigBuilder`] layering (embedded default → user file → env).
+//! * Explicit [`Config::reload`] re-reading every source and atomically
+//!   swapping the stored value via `arc_swap::ArcSwap`.
+//!
+//! Hot reload via `notify` and a reactive `watch::Receiver` subscribe
+//! API land in v0.2. See the spec at
+//! `docs/development/specs/2026-04-22-rtb-config-v0.1.md`.
 
-// Implementation placeholder — see the spec document at
-// `docs/development/specs/rust-tool-base.md` for the full contract.
+#![forbid(unsafe_code)]
 
-/// Placeholder configuration container.
-///
-/// Replaced with a typed `Config<C: AppConfig>` generic built on
-/// `figment::Figment` when the crate's v0.1 acceptance package lands.
-#[derive(Debug, Default)]
-pub struct Config;
+pub mod config;
+pub mod error;
 
-impl Config {
-    /// Construct an empty placeholder instance.
-    #[must_use]
-    pub const fn new() -> Self {
-        Self
-    }
-}
+pub use config::{Config, ConfigBuilder};
+pub use error::ConfigError;

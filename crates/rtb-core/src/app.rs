@@ -58,7 +58,7 @@ impl App {
         Self {
             metadata: Arc::new(metadata),
             version: Arc::new(version),
-            config: Arc::new(Config),
+            config: Arc::new(Config::<()>::default()),
             assets: Arc::new(Assets),
             shutdown: CancellationToken::new(),
         }

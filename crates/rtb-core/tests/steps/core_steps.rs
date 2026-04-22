@@ -299,7 +299,7 @@ fn then_diagnostic_contains(world: &mut CoreWorld, needle: String) {
     let res = world.last_result.as_ref().expect("no result");
     let err = res.as_ref().expect_err("expected Err");
     let rendered = format!("{err:?}");
-    assert!(rendered.contains(&needle), "expected {needle:?} in diagnostic; got:\n{rendered}",);
+    assert!(rendered.contains(&needle), "expected {needle:?} in diagnostic; got:\n{rendered}");
 }
 
 // ---------------------------------------------------------------------
