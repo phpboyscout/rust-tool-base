@@ -42,17 +42,14 @@ pub enum Error {
 
     /// No registered command matches the user-supplied name.
     #[error("command not found: {0}")]
-    #[diagnostic(
-        code(rtb::command_not_found),
-        help("run `--help` to list available commands"),
-    )]
+    #[diagnostic(code(rtb::command_not_found), help("run `--help` to list available commands"))]
     CommandNotFound(String),
 
     /// A built-in command was requested but its Cargo feature is off.
     #[error("feature `{0}` is not compiled in")]
     #[diagnostic(
         code(rtb::feature_disabled),
-        help("rebuild with the appropriate Cargo feature enabled"),
+        help("rebuild with the appropriate Cargo feature enabled")
     )]
     FeatureDisabled(&'static str),
 
@@ -62,46 +59,4 @@ pub enum Error {
     Other(#[from] Box<dyn Diagnostic + Send + Sync + 'static>),
 }
 
-/// Hook installation helpers.
-///
-/// These functions configure `miette`'s process-global report handler and
-/// panic hook. They are all idempotent — calling twice is a no-op (the
-/// second call reinstalls the same handler).
-pub mod hook {
-    /// Install the default `miette` graphical report handler.
-    ///
-    /// Idempotent. Safe to call from `main()` before `tokio::main`
-    /// expansion or from inside an `Application::run()` invocation.
-    pub fn install_report_handler() {
-        // TDD red phase — implementation lands in `feat(error)`.
-        todo!("install_report_handler not yet implemented")
-    }
-
-    /// Install the `miette` panic hook, routing panics through the same
-    /// graphical report pipeline.
-    pub fn install_panic_hook() {
-        todo!("install_panic_hook not yet implemented")
-    }
-
-    /// Install both hooks and register a closure that appends a
-    /// tool-specific support footer to every rendered diagnostic.
-    ///
-    /// `footer` is called once per diagnostic render and may return an
-    /// empty string to suppress the footer.
-    pub fn install_with_footer<F>(_footer: F)
-    where
-        F: Fn() -> String + Send + Sync + 'static,
-    {
-        todo!("install_with_footer not yet implemented")
-    }
-}
-
-// Compile-time guards that match T1/T2 in the spec — caught at `cargo
-// check` time, not runtime.
-const _: fn() = || {
-    fn _result_alias_is_std_result() -> Result<()> {
-        Ok(())
-    }
-    fn _assert_send<T: Send + Sync + 'static>() {}
-    _assert_send::<Error>();
-};
+pub mod hook;

@@ -24,11 +24,11 @@ fn render(diag: &dyn Diagnostic) -> String {
 
 #[test]
 fn t1_result_is_alias_for_std_result() {
-    fn _compile_check() -> Result<()> {
-        Ok(())
-    }
-    let _: Result<()> = _compile_check();
-    let _: std::result::Result<(), Error> = _compile_check();
+    // The type annotations are the test — if `Result<()>` is not the
+    // same as `std::result::Result<(), Error>`, these won't compile.
+    let framework_result: Result<()> = Ok(());
+    let std_result: std::result::Result<(), Error> = framework_result;
+    assert!(std_result.is_ok());
 }
 
 // ---------------------------------------------------------------------
@@ -64,10 +64,7 @@ fn t3_io_conversion_preserves_kind() {
 
 #[derive(Debug, thiserror::Error, miette::Diagnostic)]
 #[error("downstream: {0}")]
-#[diagnostic(
-    code(mytool::downstream),
-    help("consult the mytool handbook"),
-)]
+#[diagnostic(code(mytool::downstream), help("consult the mytool handbook"))]
 struct Downstream(String);
 
 #[test]
@@ -77,17 +74,14 @@ fn t4_other_renders_inner_code_and_help() {
     let outer = Error::Other(boxed);
 
     let rendered = render(&outer);
-    assert!(
-        rendered.contains("mytool::downstream"),
-        "expected inner code to appear:\n{rendered}",
-    );
+    assert!(rendered.contains("mytool::downstream"), "expected inner code to appear:\n{rendered}");
     assert!(
         rendered.contains("consult the mytool handbook"),
-        "expected inner help to appear:\n{rendered}",
+        "expected inner help to appear:\n{rendered}"
     );
     assert!(
         !rendered.contains("rtb::other"),
-        "transparent wrapper must not announce itself:\n{rendered}",
+        "transparent wrapper must not announce itself:\n{rendered}"
     );
 }
 
@@ -99,16 +93,13 @@ fn t4_other_renders_inner_code_and_help() {
 fn t5_every_variant_has_a_code() {
     let cases: Vec<Error> = vec![
         Error::Config("c".into()),
-        Error::Io(io::Error::new(io::ErrorKind::Other, "x")),
+        Error::Io(io::Error::other("x")),
         Error::CommandNotFound("deploy".into()),
         Error::FeatureDisabled("mcp"),
         Error::Other(Box::new(Downstream("x".into()))),
     ];
     for (i, err) in cases.iter().enumerate() {
-        assert!(
-            err.code().is_some(),
-            "variant #{i} ({err:?}) is missing a diagnostic code",
-        );
+        assert!(err.code().is_some(), "variant #{i} ({err:?}) is missing a diagnostic code");
     }
 }
 
@@ -134,18 +125,9 @@ fn t6_feature_disabled_has_help() {
 
 #[test]
 fn t7_display_matches_spec() {
-    assert_eq!(
-        format!("{}", Error::Config("bad key".into())),
-        "configuration error: bad key",
-    );
-    assert_eq!(
-        format!("{}", Error::CommandNotFound("deploy".into())),
-        "command not found: deploy",
-    );
-    assert_eq!(
-        format!("{}", Error::FeatureDisabled("mcp")),
-        "feature `mcp` is not compiled in",
-    );
+    assert_eq!(format!("{}", Error::Config("bad key".into())), "configuration error: bad key");
+    assert_eq!(format!("{}", Error::CommandNotFound("deploy".into())), "command not found: deploy");
+    assert_eq!(format!("{}", Error::FeatureDisabled("mcp")), "feature `mcp` is not compiled in");
 }
 
 // ---------------------------------------------------------------------
@@ -174,7 +156,7 @@ fn t9_non_exhaustive_trybuild_fixture_exists() {
     let path = std::path::Path::new("tests/trybuild/non_exhaustive.rs");
     assert!(
         path.exists() || std::env::var_os("RTB_SKIP_TRYBUILD").is_some(),
-        "missing trybuild fixture for T9 (or set RTB_SKIP_TRYBUILD=1 to skip)",
+        "missing trybuild fixture for T9 (or set RTB_SKIP_TRYBUILD=1 to skip)"
     );
 }
 
@@ -192,39 +174,44 @@ fn t10_install_report_handler_is_idempotent() {
 }
 
 // ---------------------------------------------------------------------
-// T11 — install_panic_hook preserves the original chain
+// T11 — install_panic_hook leaves the panic machinery functional
 //
-// We capture the panic via std::panic::catch_unwind with our own
-// innermost hook that records the payload; then assert the miette hook
-// has been installed (indirectly — calling install_panic_hook must not
-// panic and must leave a functioning hook in place).
+// We can't peek at miette's hook contents directly without its API, but
+// we can verify the whole panic-and-catch_unwind path still works after
+// installation. Stderr output from the installed hook is suppressed for
+// this test via an innermost no-op hook so the libtest runner doesn't
+// see a scary trace.
 // ---------------------------------------------------------------------
 
 #[test]
-fn t11_install_panic_hook_does_not_corrupt_chain() {
+fn t11_install_panic_hook_keeps_catch_unwind_working() {
     rtb_error::hook::install_panic_hook();
-    let outcome = std::panic::catch_unwind(|| {
-        // Suppress the installed hook's stderr output for this assertion.
-        let prev = std::panic::take_hook();
-        std::panic::set_hook(Box::new(|_| {}));
-        let res = std::panic::catch_unwind(|| panic!("probe"));
-        std::panic::set_hook(prev);
-        res
-    });
-    assert!(outcome.is_ok(), "panic machinery itself must not be broken");
+
+    // Swap in a no-op hook just for the probe panic to keep stderr clean.
+    let installed = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| {}));
+    let caught = std::panic::catch_unwind(|| panic!("probe"));
+    std::panic::set_hook(installed);
+
+    assert!(caught.is_err(), "catch_unwind must still observe the panic after install_panic_hook");
 }
 
 // ---------------------------------------------------------------------
 // T12 — install_with_footer appends the footer
+//
+// Rendering via `miette::Report`'s `Debug` impl routes through the
+// installed error hook, exercising our RtbReportHandler and its footer
+// lookup. The raw `GraphicalReportHandler::render_report` path bypasses
+// the hook and is therefore not suitable for this assertion.
 // ---------------------------------------------------------------------
 
 #[test]
 fn t12_install_with_footer_appends_text() {
     rtb_error::hook::install_with_footer(|| "support: slack://#team".to_string());
-    let e = Error::FeatureDisabled("mcp");
-    let rendered = render(&e);
+    let report = miette::Report::new(Error::FeatureDisabled("mcp"));
+    let rendered = format!("{report:?}");
     assert!(
         rendered.contains("support: slack://#team"),
-        "expected footer to be appended; got:\n{rendered}",
+        "expected footer to be appended; got:\n{rendered}"
     );
 }

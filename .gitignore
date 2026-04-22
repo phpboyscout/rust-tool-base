@@ -26,3 +26,6 @@ Thumbs.db
 /tarpaulin-report.html
 /lcov.info
 /coverage
+
+# trybuild workspace — overwritten stderr fixtures go here before being moved
+**/wip/
