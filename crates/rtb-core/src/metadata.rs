@@ -2,21 +2,36 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Release-source descriptor. Drives the `version` and `update` subcommands.
+/// Release-source descriptor. Drives the `version` and `update`
+/// subcommands — `rtb-vcs` resolves this into a concrete
+/// `ReleaseProvider`.
+///
+/// `host` fields default (to `github.com` / `gitlab.com`) so minimal
+/// configs round-trip cleanly.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(tag = "type", rename_all = "lowercase")]
+#[serde(tag = "type", rename_all = "lowercase", deny_unknown_fields)]
+#[non_exhaustive]
 pub enum ReleaseSource {
+    /// A GitHub or GitHub-Enterprise-hosted release source.
     Github {
+        /// Repository owner (user or organisation).
         owner: String,
+        /// Repository name.
         repo: String,
+        /// API host; `github.com` for public GitHub, otherwise the
+        /// Enterprise host (`github.example.com`).
         #[serde(default = "default_github_host")]
         host: String,
     },
+    /// A GitLab or self-hosted GitLab release source.
     Gitlab {
+        /// Fully-qualified project path, e.g. `myorg/group/subgroup/project`.
         project: String,
+        /// API host; `gitlab.com` for public GitLab.
         #[serde(default = "default_gitlab_host")]
         host: String,
     },
+    /// Direct HTTP release source (e.g. S3 bucket, CDN).
     Direct {
         /// URL template, e.g. `https://dist.example.com/{tool}/{version}/{asset}`.
         url_template: String,
@@ -32,34 +47,81 @@ fn default_gitlab_host() -> String {
 }
 
 /// Static tool metadata set at construction time.
-#[derive(Debug, Clone, bon::Builder)]
+///
+/// Use the [`bon::Builder`] interface — `name` and `summary` are
+/// required at compile time; missing either is a compile error.
+#[derive(Debug, Clone, Serialize, Deserialize, bon::Builder)]
+#[serde(deny_unknown_fields)]
+#[builder(on(String, into))]
 pub struct ToolMetadata {
-    #[builder(into)]
+    /// Human- and machine-facing tool name (`mytool`).
     pub name: String,
-    #[builder(into)]
+
+    /// One-line summary used in `--help` and the CLI banner.
     pub summary: String,
-    #[builder(into, default)]
+
+    /// Long-form description shown under `--help`.
+    #[serde(default)]
+    #[builder(default)]
     pub description: String,
+
+    /// Optional release source — required iff `Feature::Update` is
+    /// runtime-enabled.
+    #[serde(default)]
     pub release_source: Option<ReleaseSource>,
+
+    /// Support channel advertised in error diagnostic footers.
+    #[serde(default)]
     #[builder(default)]
     pub help: HelpChannel,
 }
 
 /// User-support channel advertised in error output.
+///
+/// `rtb-cli::Application::run` reads this off `ToolMetadata`, formats
+/// via [`HelpChannel::footer`], and installs the result into
+/// `rtb_error::hook::install_with_footer` so every diagnostic ends
+/// with a consistent support pointer.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(tag = "kind", rename_all = "lowercase")]
+#[serde(tag = "kind", rename_all = "lowercase", deny_unknown_fields)]
+#[non_exhaustive]
 pub enum HelpChannel {
+    /// No support footer.
     #[default]
     None,
+    /// Slack channel reference.
     Slack {
+        /// Slack workspace / team name.
         team: String,
+        /// Channel name without the `#`.
         channel: String,
     },
+    /// Microsoft Teams channel reference.
     Teams {
+        /// Team name.
         team: String,
+        /// Channel name.
         channel: String,
     },
+    /// Arbitrary support URL (status page, docs, contact form).
     Url {
+        /// The URL to advertise verbatim.
         url: String,
     },
+}
+
+impl HelpChannel {
+    /// The one-line footer shown under error diagnostics.
+    ///
+    /// Returns `None` when the channel is [`HelpChannel::None`] —
+    /// `install_with_footer` treats `None`/empty as "no footer".
+    #[must_use]
+    pub fn footer(&self) -> Option<String> {
+        match self {
+            Self::None => None,
+            Self::Slack { team, channel } => Some(format!("support: slack #{channel} (in {team})")),
+            Self::Teams { team, channel } => Some(format!("support: Teams → {team} / {channel}")),
+            Self::Url { url } => Some(format!("support: {url}")),
+        }
+    }
 }

@@ -4620,14 +4620,20 @@ version = "0.1.0"
 dependencies = [
  "async-trait",
  "bon",
+ "cucumber",
+ "insta",
  "linkme",
+ "miette",
  "rtb-assets",
  "rtb-config",
  "rtb-error",
  "semver",
  "serde",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
  "tokio-util",
- "tracing",
+ "trybuild",
 ]
 
 [[package]]

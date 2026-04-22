@@ -20,10 +20,18 @@ workspace = true
 rtb-error = { path = "../rtb-error", version = "0.1.0" }
 rtb-config = { path = "../rtb-config", version = "0.1.0" }
 rtb-assets = { path = "../rtb-assets", version = "0.1.0" }
-tracing = { workspace = true }
 tokio-util = { workspace = true }
 async-trait = { workspace = true }
 serde = { workspace = true }
+serde_yaml = { workspace = true }
 semver = { workspace = true }
 bon = { workspace = true }
 linkme = { workspace = true }
+miette = { workspace = true }
+
+[dev-dependencies]
+cucumber = { workspace = true }
+tokio = { workspace = true }
+insta = { workspace = true }
+serde_json = { workspace = true }
+trybuild = "1"
