@@ -19,14 +19,18 @@ workspace = true
 [dependencies]
 machine-uid = { workspace = true }
 sha2 = { workspace = true }
-reqwest = { workspace = true }
 tokio = { workspace = true }
-tracing = { workspace = true }
+async-trait = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
 miette = { workspace = true }
-opentelemetry = { workspace = true }
-opentelemetry_sdk = { workspace = true }
-opentelemetry-otlp = { workspace = true }
-tracing-opentelemetry = { workspace = true }
+time = { workspace = true }
+uuid = { workspace = true }
+# v0.2 will add: reqwest (HttpSink), opentelemetry* (OtlpSink),
+# tracing + tracing-opentelemetry.
+
+[dev-dependencies]
+cucumber = { workspace = true }
+insta = { workspace = true }
+tempfile = "3"
