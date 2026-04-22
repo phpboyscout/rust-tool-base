@@ -1,7 +1,24 @@
-// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
-#![allow(missing_docs)]
-
-//! OS keychain-backed credential store.
+//! OS-keychain-backed credential store, with precedence-aware
+//! resolution via [`Resolver`].
+//!
+//! # Precedence
+//!
+//! Downstream tools declare credentials via [`CredentialRef`] and
+//! call [`Resolver::resolve`] to fetch the underlying secret. The
+//! canonical chain is `env > keychain > literal > fallback_env`:
+//!
+//! 1. **Environment variable** — `cref.env` points at the var name.
+//! 2. **OS keychain** — `cref.keychain` holds service/account.
+//! 3. **Literal** — `cref.literal` is the secret itself. Rejected
+//!    under `CI=true` to avoid secrets landing in CI logs.
+//! 4. **Fallback env** — `cref.fallback_env` is an
+//!    ecosystem-default (`ANTHROPIC_API_KEY`, etc.).
+//!
+//! # Secrets never cross untyped boundaries
+//!
+//! Every public function that touches a secret uses
+//! [`secrecy::SecretString`]: `Debug` renders `[REDACTED]`; memory is
+//! zeroed on drop.
 //!
 //! # Backends
 //!
@@ -16,28 +33,23 @@
 //!
 //! On Linux the default is session-scoped because enabling the
 //! freedesktop Secret Service backend pulls in `libdbus-sys`, which
-//! requires `pkg-config` and `libdbus-1-dev` on the build host. For
-//! CLI tokens the session-scope behaviour is usually acceptable — users
-//! re-auth per session and persistence can be opted into.
-//!
+//! requires `pkg-config` + `libdbus-1-dev` on the build host.
 //! Downstream tools that need reboot-persistent Linux storage enable
-//! the `credentials-linux-persistent` feature on `rtb`, or
-//! `linux-persistent` on `rtb-credentials` directly. The feature
-//! extends keyring with `sync-secret-service` so the native fallback
-//! chain is keyutils → Secret Service.
+//! the `credentials-linux-persistent` feature on `rtb` (or
+//! `linux-persistent` on `rtb-credentials` directly).
 //!
-//! # API shape
-//!
-//! ```ignore
-//! #[async_trait::async_trait]
-//! pub trait CredentialStore: Send + Sync {
-//!     async fn get(&self, service: &str, account: &str) -> Result<SecretString>;
-//!     async fn set(&self, service: &str, account: &str, secret: SecretString) -> Result<()>;
-//!     async fn delete(&self, service: &str, account: &str) -> Result<()>;
-//! }
-//! ```
-//!
-//! Default implementations: `KeyringStore` (platform-native per the
-//! table above), `EnvStore`, and `LiteralConfigStore` (for tests / CI).
-//! Selection precedence mirrors the GTB `auth.env > auth.keychain >
-//! auth.value > ecosystem env` order.
+//! See `docs/development/specs/2026-04-22-rtb-credentials-v0.1.md`
+//! for the authoritative contract.
+
+#![forbid(unsafe_code)]
+
+pub mod error;
+pub mod reference;
+pub mod resolver;
+pub mod store;
+
+pub use error::CredentialError;
+pub use reference::{CredentialRef, KeychainRef};
+pub use resolver::Resolver;
+pub use secrecy::{ExposeSecret, SecretString};
+pub use store::{CredentialStore, EnvStore, KeyringStore, LiteralStore, MemoryStore};

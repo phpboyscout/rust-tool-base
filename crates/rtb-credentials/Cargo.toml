@@ -26,9 +26,15 @@ linux-persistent = ["keyring/sync-secret-service"]
 
 [dependencies]
 keyring = { workspace = true }
-secrecy = { workspace = true }
+secrecy = { workspace = true, features = ["serde"] }
 zeroize = { workspace = true }
 async-trait = { workspace = true }
 thiserror = { workspace = true }
 miette = { workspace = true }
 tracing = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+
+[dev-dependencies]
+cucumber = { workspace = true }
+insta = { workspace = true }
