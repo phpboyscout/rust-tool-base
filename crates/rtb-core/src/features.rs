@@ -26,16 +26,9 @@ impl Feature {
     /// Features enabled by default when no explicit overrides are supplied.
     #[must_use]
     pub fn defaults() -> HashSet<Self> {
-        [
-            Self::Init,
-            Self::Version,
-            Self::Update,
-            Self::Docs,
-            Self::Mcp,
-            Self::Doctor,
-        ]
-        .into_iter()
-        .collect()
+        [Self::Init, Self::Version, Self::Update, Self::Docs, Self::Mcp, Self::Doctor]
+            .into_iter()
+            .collect()
     }
 }
 
@@ -69,9 +62,7 @@ pub struct FeaturesBuilder {
 impl FeaturesBuilder {
     #[must_use]
     pub fn new() -> Self {
-        Self {
-            enabled: Feature::defaults(),
-        }
+        Self { enabled: Feature::defaults() }
     }
 
     #[must_use]
@@ -88,8 +79,6 @@ impl FeaturesBuilder {
 
     #[must_use]
     pub fn build(self) -> Features {
-        Features {
-            enabled: self.enabled,
-        }
+        Features { enabled: self.enabled }
     }
 }

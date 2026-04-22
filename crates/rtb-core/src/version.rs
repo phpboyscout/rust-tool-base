@@ -16,11 +16,7 @@ pub struct VersionInfo {
 
 impl VersionInfo {
     pub fn new(version: Version) -> Self {
-        Self {
-            version,
-            commit: None,
-            date: None,
-        }
+        Self { version, commit: None, date: None }
     }
 
     #[must_use]

@@ -8,9 +8,9 @@
 
 #![cfg_attr(docsrs, feature(doc_auto_cfg))]
 
-pub use rtb_core as core;
-pub use rtb_config as config;
 pub use rtb_assets as assets;
+pub use rtb_config as config;
+pub use rtb_core as core;
 pub use rtb_error as error;
 
 #[cfg(feature = "cli")]
