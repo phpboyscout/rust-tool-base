@@ -2,35 +2,50 @@
 //!
 //! # Entry point
 //!
-//! Downstream tools use the `Application` typestate builder (powered by
-//! `bon`) to wire their metadata, config type, embedded assets, and custom
-//! commands. The builder installs:
+//! Downstream tools use [`Application::builder`] to wire their
+//! metadata, version info, optional assets + features, and the
+//! framework installs:
 //!
-//! * a `tracing-subscriber` registry (pretty-fmt by default, JSON when
-//!   `--output json` or the env filter promotes it),
-//! * a `miette` diagnostic hook and panic hook,
-//! * a `tokio` runtime (unless the caller already provides one),
-//! * a `CancellationToken` wired to `SIGINT`/`SIGTERM`,
-//! * clap-based command parsing with built-in subcommands gated by
-//!   [`rtb_core::features::Features`].
+//! * a `tracing-subscriber` registry (pretty fmt on TTY, JSON
+//!   otherwise or when `--log-format json` is set),
+//! * the `miette` diagnostic + panic hooks (via [`rtb_error::hook`]),
+//! * a [`tokio_util::sync::CancellationToken`] bound to `SIGINT` and
+//!   Unix `SIGTERM`,
+//! * clap-based command parsing with built-in subcommands filtered by
+//!   the runtime [`rtb_core::features::Features`] set.
 //!
 //! ```ignore
-//! use rtb::prelude::*;
+//! use rtb_cli::prelude::*;
 //!
 //! #[tokio::main]
 //! async fn main() -> miette::Result<()> {
-//!     rtb::cli::Application::builder()
-//!         .metadata(ToolMetadata::builder().name("mytool").summary("…").build())
-//!         .version(VersionInfo::new(env!("CARGO_PKG_VERSION").parse().unwrap()))
-//!         .command::<commands::Deploy>()
-//!         .command::<commands::Status>()
-//!         .build()
+//!     Application::builder()
+//!         .metadata(ToolMetadata::builder().name("mytool").summary("a tool").build())
+//!         .version(VersionInfo::from_env())
+//!         .build()?
 //!         .run()
 //!         .await
 //! }
 //! ```
+//!
+//! See `docs/development/specs/2026-04-22-rtb-cli-v0.1.md` for the
+//! authoritative contract.
 
-// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
-#![allow(missing_docs)]
+#![forbid(unsafe_code)]
 
-pub struct Application;
+pub mod application;
+pub mod builtins;
+pub mod health;
+pub mod init;
+pub mod runtime;
+
+pub use application::{Application, ApplicationBuilder};
+pub use health::{HealthCheck, HealthReport, HealthStatus};
+pub use init::Initialiser;
+
+/// Glob-importable convenience prelude for downstream `fn main()`.
+pub mod prelude {
+    pub use crate::application::Application;
+    pub use rtb_core::prelude::*;
+    pub use rtb_error::{Error as RtbError, Result as RtbResult};
+}

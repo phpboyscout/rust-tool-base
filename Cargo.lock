@@ -4463,19 +4463,23 @@ name = "rtb-cli"
 version = "0.1.0"
 dependencies = [
  "async-trait",
- "bon",
  "clap",
+ "cucumber",
+ "insta",
  "linkme",
  "miette",
- "owo-colors",
  "rtb-assets",
  "rtb-config",
  "rtb-core",
  "rtb-error",
+ "semver",
+ "serde_json",
+ "serde_yaml",
  "tokio",
  "tokio-util",
  "tracing",
  "tracing-subscriber",
+ "trybuild",
 ]
 
 [[package]]

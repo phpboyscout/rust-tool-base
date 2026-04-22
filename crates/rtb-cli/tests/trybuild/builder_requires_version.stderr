@@ -1,0 +1,13 @@
+error[E0599]: no method named `build` found for struct `ApplicationBuilder<HasMetadata, NoVersion>` in the current scope
+ --> tests/trybuild/builder_requires_version.rs:9:10
+  |
+7 |       let _ = Application::builder()
+  |  _____________-
+8 | |         .metadata(ToolMetadata::builder().name("x").summary("y").build())
+9 | |         .build();
+  | |         -^^^^^ method not found in `ApplicationBuilder<HasMetadata, NoVersion>`
+  | |_________|
+  |
+  |
+  = note: the method was found for
+          - `ApplicationBuilder<HasMetadata, HasVersion>`
