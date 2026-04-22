@@ -30,17 +30,17 @@
 // Implementation placeholder — see the spec document at
 // `docs/development/specs/rust-tool-base.md` for the full contract.
 
+/// Placeholder configuration container.
+///
+/// Replaced with a typed `Config<C: AppConfig>` generic built on
+/// `figment::Figment` when the crate's v0.1 acceptance package lands.
+#[derive(Debug, Default)]
 pub struct Config;
 
 impl Config {
-    /// Placeholder — replaced with a typed generic builder when implemented.
-    pub fn new() -> Self {
+    /// Construct an empty placeholder instance.
+    #[must_use]
+    pub const fn new() -> Self {
         Self
-    }
-}
-
-impl Default for Config {
-    fn default() -> Self {
-        Self::new()
     }
 }

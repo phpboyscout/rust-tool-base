@@ -24,6 +24,10 @@ docs = ["dep:rtb-docs"]
 mcp = ["dep:rtb-mcp"]
 ai = ["dep:rtb-ai"]
 credentials = ["dep:rtb-credentials"]
+# Opt-in reboot-persistent Linux keychain via freedesktop Secret Service.
+# Requires libdbus-1-dev + pkg-config on the build host. Off by default
+# to keep the build hermetic on Linux.
+credentials-linux-persistent = ["credentials", "rtb-credentials/linux-persistent"]
 tui = ["dep:rtb-tui"]
 telemetry = ["dep:rtb-telemetry"]
 vcs = ["dep:rtb-vcs"]

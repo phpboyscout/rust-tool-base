@@ -1,3 +1,6 @@
+// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
+#![allow(missing_docs)]
+
 //! Opt-in anonymous telemetry.
 //!
 //! Downstream tools author-enable telemetry via the `telemetry` Cargo

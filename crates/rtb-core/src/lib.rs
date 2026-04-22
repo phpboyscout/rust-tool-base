@@ -6,6 +6,9 @@
 //! `Arc<T>` or `Arc<dyn Trait>` and are composed via the typestate builder
 //! pattern (see the [`bon`] crate) rather than functional options.
 
+// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
+#![allow(missing_docs)]
+
 pub mod app;
 pub mod features;
 pub mod metadata;

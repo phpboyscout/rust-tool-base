@@ -16,6 +16,14 @@ keywords.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = []
+# Opt-in Linux persistence via freedesktop Secret Service (D-Bus).
+# Pulls in `libdbus-sys`, which at build time requires `pkg-config` and
+# `libdbus-1-dev` on the host. Without this feature the Linux backend is
+# the pure-Rust kernel keyutils (`linux-native`), which is session-scoped.
+linux-persistent = ["keyring/sync-secret-service"]
+
 [dependencies]
 keyring = { workspace = true }
 secrecy = { workspace = true }

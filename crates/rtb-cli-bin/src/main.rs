@@ -10,6 +10,10 @@
 //! This binary is intentionally separate from `rtb-cli` (the library) so
 //! downstream tools don't pull in `minijinja`, prompt libraries, etc.
 
+// TODO: remove when this binary ships v0.1 — the real subcommand dispatch
+// will exercise the Result path, silencing clippy::unnecessary_wraps.
+#![allow(clippy::unnecessary_wraps)]
+
 fn main() -> miette::Result<()> {
     tracing_subscriber::fmt()
         .with_env_filter(

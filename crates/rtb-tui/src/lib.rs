@@ -1,3 +1,6 @@
+// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
+#![allow(missing_docs)]
+
 //! Reusable TUI widgets.
 //!
 //! * `Wizard` — multi-step form built on `inquire`. Escape returns

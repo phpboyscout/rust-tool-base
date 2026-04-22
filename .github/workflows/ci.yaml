@@ -27,6 +27,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: { components: clippy }
       - uses: Swatinem/rust-cache@v2
+      # Linux runners have libdbus-1-dev + pkg-config pre-installed, so
+      # --all-features (which activates credentials-linux-persistent)
+      # builds cleanly here. Local `just lint` uses the default feature
+      # set instead.
       - run: cargo clippy --workspace --all-targets --all-features
 
   test:
@@ -41,7 +45,13 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
-      - run: cargo nextest run --workspace --all-features
+      # Linux: all features (including opt-in dbus) — runners ship
+      # libdbus. macOS / Windows: default features — `credentials-
+      # linux-persistent` is a Linux-only feature and not relevant.
+      - if: runner.os == 'Linux'
+        run: cargo nextest run --workspace --all-features
+      - if: runner.os != 'Linux'
+        run: cargo nextest run --workspace
 
   deny:
     name: cargo-deny

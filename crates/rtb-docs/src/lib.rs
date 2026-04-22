@@ -1,3 +1,6 @@
+// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
+#![allow(missing_docs)]
+
 //! Interactive TUI docs browser.
 //!
 //! Uses `ratatui` for the two-pane layout and `termimad` for markdown

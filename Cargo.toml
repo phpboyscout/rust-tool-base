@@ -97,7 +97,7 @@ tabled = { version = "0.20", features = ["derive"] }
 # Secrets
 secrecy = "0.10"
 zeroize = "1"
-keyring = { version = "3", features = ["apple-native", "windows-native", "sync-secret-service"] }
+keyring = { version = "3", default-features = false, features = ["apple-native", "windows-native", "linux-native"] }
 
 # VCS
 gix = { version = "0.72", default-features = false, features = ["blocking-network-client", "blocking-http-transport-reqwest-rust-tls"] }

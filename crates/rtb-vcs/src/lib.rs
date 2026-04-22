@@ -8,4 +8,7 @@
 //! * Token resolution uses `secrecy::SecretString` end-to-end — the in-memory
 //!   secret is zeroed on drop and never logged.
 
+// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
+#![allow(missing_docs)]
+
 pub struct Repo;

@@ -5,4 +5,7 @@
 //! `schemars`-backed input schema). The `mcp` subcommand boots an `rmcp`
 //! server over stdio (default) or streamable HTTP.
 
+// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
+#![allow(missing_docs)]
+
 pub struct McpServer;
