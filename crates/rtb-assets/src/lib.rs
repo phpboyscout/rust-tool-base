@@ -1,24 +1,47 @@
 //! Embedded-asset + overlay filesystem abstraction.
 //!
-//! Combines `rust-embed` (for compile-time asset bundling with a dev-mode
-//! disk passthrough) with `vfs::OverlayFS` (for layered user-override
-//! semantics). For structured formats (YAML/JSON/TOML) the framework deep
-//! merges across layers; for binary blobs, last-registered-wins shadowing
-//! applies.
+//! Tools built on RTB ship assets from three places: compiled into the
+//! binary via [`rust_embed`], on the user's disk (per-user overrides),
+//! and in-memory (tests, scaffolders). [`Assets`] unifies these behind
+//! a single read-only API.
 //!
-//! > **Stub.** This crate ships a placeholder `Assets` type until its
-//! > v0.1 acceptance package lands. The public API will be redesigned
-//! > around a `VfsPath` overlay at that time.
+//! # Semantics
+//!
+//! * **Binary reads** ([`Assets::open`], [`Assets::open_text`],
+//!   [`Assets::exists`]) follow last-wins shadowing. The
+//!   highest-priority layer that provides the path supplies the bytes.
+//! * **Directory listing** ([`Assets::list_dir`]) unions entries across
+//!   layers, deduplicated and sorted.
+//! * **Structured merge** ([`Assets::load_merged_yaml`],
+//!   [`Assets::load_merged_json`]) reads the file from every layer that
+//!   has it and deep-merges via RFC-7396 merge-patch semantics — nested
+//!   maps merge recursively; scalars replace wholesale.
+//!
+//! # Construction
+//!
+//! ```
+//! use rtb_assets::Assets;
+//! use std::collections::HashMap;
+//!
+//! let assets = Assets::builder()
+//!     .memory(
+//!         "defaults",
+//!         HashMap::from([("greeting.txt".into(), b"hello".to_vec())]),
+//!     )
+//!     .build();
+//!
+//! assert_eq!(assets.open_text("greeting.txt").unwrap(), "hello");
+//! ```
+//!
+//! See `docs/development/specs/2026-04-22-rtb-assets-v0.1.md` for the
+//! authoritative contract.
 
-/// Placeholder asset container. Replaced with a real overlay-backed
-/// type when `rtb-assets` v0.1 ships.
-#[derive(Debug, Default)]
-pub struct Assets;
+#![forbid(unsafe_code)]
 
-impl Assets {
-    /// Construct an empty placeholder instance.
-    #[must_use]
-    pub const fn new() -> Self {
-        Self
-    }
-}
+pub mod assets;
+pub mod error;
+pub mod source;
+
+pub use assets::{Assets, AssetsBuilder};
+pub use error::AssetError;
+pub use source::{AssetSource, DirectorySource, EmbeddedSource, MemorySource};

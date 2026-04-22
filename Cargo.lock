@@ -4446,15 +4446,16 @@ dependencies = [
 name = "rtb-assets"
 version = "0.1.0"
 dependencies = [
+ "cucumber",
+ "insta",
  "json-patch",
  "miette",
  "rust-embed",
+ "serde",
  "serde_json",
  "serde_yaml",
  "thiserror 2.0.18",
- "toml 0.8.23",
- "tracing",
- "vfs",
+ "tokio",
 ]
 
 [[package]]
@@ -6272,15 +6273,6 @@ name = "version_check"
 version = "0.9.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
-
-[[package]]
-name = "vfs"
-version = "0.12.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e723b9e1c02a3cf9f9d0de6a4ddb8cdc1df859078902fe0ae0589d615711ae6"
-dependencies = [
- "filetime",
-]
 
 [[package]]
 name = "vsimd"
