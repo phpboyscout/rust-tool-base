@@ -103,6 +103,13 @@ pub struct GithubParams {
     /// Per-request timeout in seconds. `0` disables.
     #[serde(default = "GithubParams::default_timeout_seconds")]
     pub timeout_seconds: u64,
+    /// Test-only escape hatch: when `true`, the factory builds a
+    /// reqwest client without `https_only` and constructs URLs using
+    /// the `http://` scheme. `#[serde(skip)]` means config files
+    /// cannot downgrade HTTPS enforcement. Mirrors the pattern
+    /// documented for `rtb-ai::Config::allow_insecure_base_url`.
+    #[serde(skip)]
+    pub allow_insecure_base_url: bool,
 }
 
 impl GithubParams {

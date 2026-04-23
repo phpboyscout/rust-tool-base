@@ -1,5 +1,6 @@
 //! Step definitions for `tests/features/registry.feature`.
 
+pub mod github_steps;
 pub mod registry_steps;
 
 use std::sync::Arc;
@@ -7,8 +8,8 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use cucumber::World;
 use rtb_vcs::release::{
-    ProviderError, ProviderFactory, RegisteredProvider, Release, ReleaseAsset, ReleaseProvider,
-    RELEASE_PROVIDERS,
+    ProviderError, ProviderFactory, ProviderRegistration, RegisteredProvider, Release,
+    ReleaseAsset, ReleaseProvider, RELEASE_PROVIDERS,
 };
 use rtb_vcs::ReleaseSourceConfig;
 use secrecy::SecretString;
@@ -55,10 +56,12 @@ pub fn mock_factory(
 }
 
 #[linkme::distributed_slice(RELEASE_PROVIDERS)]
-pub static MOCK_BDD_REGISTRATION: RegisteredProvider = RegisteredProvider {
-    source_type: "mock-bdd-backend",
-    factory: mock_factory as ProviderFactory,
-};
+fn __register_mock_bdd() -> Box<dyn ProviderRegistration> {
+    Box::new(RegisteredProvider {
+        source_type: "mock-bdd-backend",
+        factory: mock_factory as ProviderFactory,
+    })
+}
 
 #[derive(Debug, Default, World)]
 pub struct VcsWorld {
@@ -78,4 +81,8 @@ pub struct VcsWorld {
     pub release: Option<Release>,
     /// `None` result from a lookup step.
     pub lookup_none: bool,
+    /// Wiremock server (github BDD scenarios).
+    pub mock_server: Option<wiremock::MockServer>,
+    /// Latest error produced by a When step.
+    pub last_error: Option<ProviderError>,
 }

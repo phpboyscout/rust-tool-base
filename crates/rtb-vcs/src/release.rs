@@ -292,12 +292,40 @@ impl std::fmt::Debug for RegisteredProvider {
     }
 }
 
+impl ProviderRegistration for RegisteredProvider {
+    fn source_type(&self) -> &'static str {
+        self.source_type
+    }
+    fn factory(&self) -> ProviderFactory {
+        self.factory
+    }
+}
+
+/// Trait implemented by each registered provider's registration hook.
+///
+/// The indirection exists so [`RELEASE_PROVIDERS`] can be a slice of
+/// `fn() -> Box<dyn ProviderRegistration>` — matching the
+/// `rtb_app::BUILTIN_COMMANDS` convention (`fn() -> Box<dyn Command>`).
+/// Struct-valued distributed slices trip the `link_section` lint
+/// under crate-level `#![forbid(unsafe_code)]` on Rust 1.95+;
+/// boxed trait objects don't.
+pub trait ProviderRegistration: Send + Sync + 'static {
+    /// The discriminator (`github`, `gitlab`, `custom`, …) the
+    /// factory was registered under.
+    fn source_type(&self) -> &'static str;
+    /// The factory that constructs a provider for this backend.
+    fn factory(&self) -> ProviderFactory;
+}
+
 /// Distributed slice of built-in and downstream-custom providers.
 ///
-/// Populated at link time via `linkme`. Each entry is a
-/// [`RegisteredProvider`]; lookup is via [`lookup`].
+/// Entries are `fn() -> Box<dyn ProviderRegistration>`. A new backend
+/// registers by writing a small type that implements
+/// [`ProviderRegistration`] and a `fn() -> Box<dyn _>` annotated with
+/// `#[distributed_slice(RELEASE_PROVIDERS)]`. See
+/// `crates/rtb-vcs/src/github.rs` for an example.
 #[linkme::distributed_slice]
-pub static RELEASE_PROVIDERS: [RegisteredProvider] = [..];
+pub static RELEASE_PROVIDERS: [fn() -> Box<dyn ProviderRegistration>];
 
 /// Return the [`ProviderFactory`] for `source_type`, or `None` if no
 /// backend has registered for that discriminator.
@@ -307,7 +335,11 @@ pub static RELEASE_PROVIDERS: [RegisteredProvider] = [..];
 /// to the network round-trip that follows.
 #[must_use]
 pub fn lookup(source_type: &str) -> Option<ProviderFactory> {
-    RELEASE_PROVIDERS.iter().find(|r| r.source_type == source_type).map(|r| r.factory)
+    RELEASE_PROVIDERS
+        .iter()
+        .map(|make| make())
+        .find(|r| r.source_type() == source_type)
+        .map(|r| r.factory())
 }
 
 /// Return a sorted, de-duplicated list of registered `source_type`
@@ -315,7 +347,8 @@ pub fn lookup(source_type: &str) -> Option<ProviderFactory> {
 /// caller specified an unknown backend.
 #[must_use]
 pub fn registered_types() -> Vec<&'static str> {
-    let mut out: Vec<&'static str> = RELEASE_PROVIDERS.iter().map(|r| r.source_type).collect();
+    let mut out: Vec<&'static str> =
+        RELEASE_PROVIDERS.iter().map(|make| make().source_type()).collect();
     out.sort_unstable();
     out.dedup();
     out
