@@ -156,28 +156,31 @@ pub fn resolve_link(root: &str, current_page: &str, link: &str) -> Option<String
     if link.starts_with("http://") || link.starts_with("https://") || link.starts_with("mailto:") {
         return Some(link.to_string());
     }
-    let current_dir =
-        std::path::Path::new(current_page).parent().unwrap_or_else(|| std::path::Path::new(""));
-    let resolved = current_dir.join(link);
-    // Normalise — split components and reject `..` that escapes the root.
-    let mut normalised = std::path::PathBuf::new();
-    for comp in resolved.components() {
-        use std::path::Component;
-        match comp {
-            Component::Normal(c) => normalised.push(c),
-            Component::ParentDir => {
-                if !normalised.pop() {
-                    // Escaped root — reject.
-                    return None;
-                }
+    // Reject absolute paths up front — both Unix (`/etc/…`) and
+    // Windows (`\foo`, `C:\foo`) shapes — before any segment work.
+    if link.starts_with('/') || std::path::Path::new(link).is_absolute() {
+        return None;
+    }
+    // Operate on `/`-joined segments directly — paths in the doc tree
+    // are URL-shaped and must not pick up the platform separator (`\`
+    // on Windows) from `PathBuf::join`.
+    let mut normalised: Vec<&str> = Vec::new();
+    let base_dir = current_page.rsplit_once('/').map_or("", |(dir, _file)| dir);
+    for seg in base_dir.split('/').filter(|s| !s.is_empty()) {
+        normalised.push(seg);
+    }
+    for seg in link.split('/') {
+        match seg {
+            "" | "." => {}
+            ".." => {
+                // Escaped root — `?` propagates `None`.
+                normalised.pop()?;
             }
-            Component::CurDir => {}
-            Component::RootDir | Component::Prefix(_) => return None,
+            other => normalised.push(other),
         }
     }
-    let rel = normalised.to_str()?.to_string();
     let _ = root;
-    Some(rel)
+    Some(normalised.join("/"))
 }
 
 // ---------------------------------------------------------------------
