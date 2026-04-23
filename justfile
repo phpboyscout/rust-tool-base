@@ -49,14 +49,19 @@ audit:
     cargo deny check
 
 docs:
-    cargo doc --workspace --no-deps
+    RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps
+
+docs-open:
+    RUSTDOCFLAGS="-D warnings" cargo doc --workspace --no-deps --open
 
 # Run the `rtb` scaffolder CLI locally.
 rtb *ARGS:
     cargo run -p rtb-cli-bin -- {{ARGS}}
 
 # Local dev gate — default feature set, works without system deps.
-ci: fmt-check lint test audit coverage
+# `docs` runs with `RUSTDOCFLAGS="-D warnings"` so broken intra-doc
+# links fail the gate before they reach the remote CI.
+ci: fmt-check lint docs test audit coverage
 
 # Full gate for CI / environments with pkg-config + libdbus-1-dev.
-ci-full: fmt-check lint-full test-full audit
+ci-full: fmt-check lint-full docs test-full audit

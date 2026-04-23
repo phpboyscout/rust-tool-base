@@ -8,6 +8,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The authoritative contract for every subsystem is [`docs/development/specs/rust-tool-base.md`](docs/development/specs/rust-tool-base.md). When in doubt, that spec wins.
 
+**Before writing any code, read [`docs/development/engineering-standards.md`](docs/development/engineering-standards.md).** It distils the security, correctness, concurrency, documentation, and testing requirements that every contribution — human or agent — follows. Rules in §1 (Security) are non-negotiable; rules in §4 (Documentation) are gated by `just ci`.
+
 ## Workflows
 
 Skills under `.claude/skills/rtb-*` are planned but not yet authored. Until they exist, follow the development lifecycle below explicitly.

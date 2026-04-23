@@ -650,14 +650,34 @@ Minimum shippable scope:
 
 ---
 
-## 16. Post-0.1 roadmap
+## 16. Roadmap
 
-- **0.2** — `update`, `docs` (TUI + markdown), `credentials` (keyring).
-- **0.3** — `ai` (genai), `mcp` (rmcp). Structured output.
-- **0.4** — `telemetry`. OTLP pipeline, opt-in wizard.
-- **0.5** — `vcs` complete (octocrab + gitlab + gix). Release providers.
-- **0.6** — scaffolder regeneration; manifest-driven reconciliation.
-- **1.0** — API freeze; semver commitment; full docs site.
+### Shipped
+
+- **0.1.0** (2026-04-22) — `rtb-error`, `rtb-core`, `rtb-config`,
+  `rtb-assets`, `rtb-cli`, `rtb-credentials`, `rtb-telemetry`.
+  151 acceptance criteria green. See `CHANGELOG.md` and
+  `docs/development/specs/2026-04-22-*.md` for per-crate detail.
+
+### Pending
+
+- **0.2** — `rtb-update` (self-update with signature verification),
+  `rtb-docs` (TUI + markdown), `rtb-redact` helper for telemetry
+  attrs, `rtb-config::subscribe()` + hot-reload, OTLP sink in
+  `rtb-telemetry`, HTTP JSON sink in `rtb-telemetry`.
+  Remove the `update`/`docs`/`mcp` stubs from `rtb-cli`'s built-ins
+  as each real crate registers its own command.
+- **0.3** — `rtb-ai` (genai + Anthropic-direct for caching/agents),
+  `rtb-mcp` (`rmcp` SDK). Structured output via `schemars` +
+  `jsonschema`.
+- **0.4** — `rtb-tui` (Wizard, tables, spinners), `rtb-cli`
+  `credentials`/`telemetry`/`config-set` subcommands,
+  `rtb-test-support` crate (replaces `App::for_testing`).
+- **0.5** — `rtb-vcs` (octocrab + gitlab + gix). Release providers
+  behind the `ReleaseProvider` trait. `rtb-update` switches to it.
+- **0.6** — `rtb-cli-bin` scaffolder with `rtb new`, `rtb generate`,
+  `rtb regenerate`.
+- **1.0** — API freeze, semver commitment, full docs site.
 
 ---
 
