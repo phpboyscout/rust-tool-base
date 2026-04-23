@@ -1,0 +1,22 @@
+# Dependabot configuration.
+# Docs: https://docs.github.com/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # Cargo workspace dependencies — the lockfile is the source of truth
+  # for transitive pins, so Dependabot bumps it alongside direct deps.
+  - package-ecosystem: "cargo"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    # Integrate into develop so the umbrella develop→main PR aggregates
+    # dependency bumps alongside feature work before release.
+    target-branch: "develop"
+
+  # GitHub Actions — keeps the SHA pins up to date while preserving the
+  # commented-out version tag.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    target-branch: "develop"
