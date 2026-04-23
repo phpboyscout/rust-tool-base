@@ -47,6 +47,12 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 - `examples/minimal` is a real reference tool (was a stub).
 - Concept pages added for `app-context`, `configuration`,
   `error-diagnostics`.
+- **Per-crate component pages** in `docs/components/` for every
+  shipped crate (rtb-error, rtb-core, rtb-config, rtb-assets,
+  rtb-cli, rtb-credentials, rtb-telemetry, rtb-test-support).
+  Matches the go-tool-base documentation style; ready for Zensical
+  microsite generation.
+- `docs/index.md` rewritten as a landing page for the docs tree.
 - `rtb-telemetry::Event::attrs` docstring lists explicit
   don't-pass-here categories.
 - `rtb-telemetry::TelemetryContextBuilder::salt` docstring
