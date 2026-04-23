@@ -171,37 +171,13 @@ fn __register_config() -> Box<dyn Command> {
 }
 
 // =====================================================================
-// Feature-disabled placeholders for update / docs / mcp.
+// Feature-disabled placeholders for docs / mcp.
 //
-// These crates each have their own v0.1 pending; until each ships,
-// their built-in command is a stub returning Error::FeatureDisabled
-// naming the Cargo feature that would compile in the real impl.
+// The `update` stub has been removed — `rtb-update` v0.1 registers
+// the real command. Downstream tools that disable the rtb `update`
+// feature still get the stub's behaviour (no command registered;
+// clap reports "unknown subcommand" if invoked).
 // =====================================================================
-
-/// Placeholder for the `update` subcommand.
-pub struct UpdateStub;
-
-#[async_trait]
-impl Command for UpdateStub {
-    fn spec(&self) -> &CommandSpec {
-        static SPEC: CommandSpec = CommandSpec {
-            name: "update",
-            about: "Check for and install a newer release",
-            aliases: &[],
-            feature: Some(Feature::Update),
-        };
-        &SPEC
-    }
-
-    async fn run(&self, _app: App) -> miette::Result<()> {
-        Err(rtb_error::Error::FeatureDisabled("update").into())
-    }
-}
-
-#[distributed_slice(BUILTIN_COMMANDS)]
-fn __register_update_stub() -> Box<dyn Command> {
-    Box::new(UpdateStub)
-}
 
 /// Placeholder for the `docs` subcommand.
 pub struct DocsStub;

@@ -12,7 +12,6 @@
 #![allow(missing_docs)]
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use predicates::str;
 
 /// Run the built `minimal` binary with the given args and return the
@@ -69,15 +68,14 @@ fn unknown_subcommand_fails() {
     bin().arg("definitely-not-a-command").assert().failure();
 }
 
-// --- Contract: the `update` stub returns FeatureDisabled -----------
+// --- Contract: the `update` command is discoverable ----------------
 
 #[test]
-fn update_stub_reports_feature_disabled() {
-    // The rtb-cli stub for `update` — it reports via the miette
-    // diagnostic pipeline, which writes to stderr.
-    bin()
-        .arg("update")
-        .assert()
-        .failure()
-        .stderr(str::contains("update").and(str::contains("not compiled in")));
+fn update_command_discoverable() {
+    // The minimal example links `rtb-update` through the rtb umbrella's
+    // `update` feature. `rtb-update` v0.1 ships a shim that prints a
+    // pointer at the `Updater` library API and exits 0 — the full CLI
+    // dispatch layer lands in v0.2.x. This smoke test just asserts the
+    // command exists and isn't the old FeatureDisabled error.
+    bin().arg("update").assert().success().stdout(str::contains("rtb_update::Updater"));
 }
