@@ -415,32 +415,40 @@ staged_at: Some(...) }`.
 
 ## 8. Open questions
 
-- **O1 — Public key rotation.** If a vendor rotates their signing key,
-  every old binary out there can no longer verify updates. Mitigation
-  options: (a) embed a list of keys on `ToolMetadata`, any of which
-  verifies; (b) require a signed "key rotation" release carrying the
-  new key signed by the old. GTB uses (a). Proposed resolution for
-  v0.1: (a) as `Vec<[u8; 32]>` on `ToolMetadata::update_public_keys`.
-- **O2 — Minisign adoption.** Minisign wraps Ed25519 with a header
-  format and a small trust-database concept. GTB supports both raw and
-  minisign formats. RTB v0.1 also supports both. If one dominates in
-  practice by v0.3, drop the other.
-- **O3 — Telemetry on unsigned releases.** If a tool author ships a
-  Direct release without signatures, should `rtb-telemetry` emit an
-  "unsigned release" event on every update? Proposed resolution: no
-  mandatory event; but `doctor` surfaces it.
-- **O4 — `--to <version>` + downgrades.** Should `--to` allow
-  explicitly downgrading to an older version? GTB disallows this; RTB
-  leaning same — `target < current` fails with a clear diagnostic
-  unless `--force` is also passed.
-- **O5 — Verification order — sig then checksum, or checksum then
-  sig?** Signature is the stronger primitive; verify first. Checksum
-  catches corruption that happens to produce a still-valid sig (vanishingly
-  rare but not zero). Proposed resolution: sig → checksum, in that
-  order.
-- **O6 — Asset matching grammar.** The default regex for host-triple
-  matching needs documentation. Proposed:
-  `{name}-{version}-{target}{ext}` where `{target}` is the Rust triple
-  and `{ext}` is `.tar.gz` on Unix / `.zip` on Windows. Tools that
-  name differently override via `ToolMetadata::update_asset_pattern`.
-  Land the pattern config in v0.1 to avoid painting into a corner.
+- **O1 — Public key rotation.** **Resolved: vector of trusted keys.**
+  `ToolMetadata::update_public_keys: Vec<[u8; 32]>` — any one of them
+  verifies. Matches GTB. A new release signed by a freshly rotated key
+  is verifiable by every old binary that shipped with both the old and
+  new key trusted; vendors rotate by shipping a release that adds the
+  new key, then a later release that removes the old key.
+- **O2 — Minisign adoption.** **Resolved: support both raw and
+  minisign at v0.1.** Detection by filename suffix (`.sig` → raw
+  64-byte, `.minisig` → minisign with header). Matches GTB. If one
+  dominates by v0.3, drop the other.
+- **O3 — Telemetry on unsigned releases.** **Resolved: no auto-
+  telemetry event.** `doctor` surfaces the condition at check time;
+  shipping an unsigned release is a deliberate tool-author choice and
+  doesn't warrant continuous noise in the telemetry stream.
+- **O4 — `--to <version>` + downgrades.** **Resolved: `target <
+  current` fails unless `--force` is also passed.** Matches GTB. The
+  diagnostic points at `--force` explicitly so downgrade-to-fix-a-
+  regression flows are still one extra flag away.
+- **O5 — Verification order.** **Resolved: signature → checksum.**
+  Signature is the stronger primitive; verify first. Checksum is the
+  defence against the vanishingly-rare corruption that produces a
+  still-valid sig.
+- **O6 — Asset matching grammar.** **Resolved: ship a configurable
+  pattern at v0.1.** Default: `{name}-{version}-{target}{ext}` where
+  `{target}` is the Rust host triple and `{ext}` is `.tar.gz` on Unix
+  / `.zip` on Windows. Tools override via
+  `ToolMetadata::update_asset_pattern: Option<&'static str>`.
+
+## 9. Fast-follow in 0.2.x
+
+Acknowledged during spec review as planned follow-ups rather than
+v0.2 blockers:
+
+- **GitHub App JWT auth** on the `rtb-vcs` GitHub backend. v0.2 is
+  PAT-only; App auth lands in 0.2.x after v0.2 ships. Enterprise
+  installations that require App JWT will need to stay on `rtb-vcs`
+  0.2.x+ or maintain a custom provider in the interim.

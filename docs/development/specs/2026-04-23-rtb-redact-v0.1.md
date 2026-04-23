@@ -57,7 +57,11 @@ pub fn string(input: &str) -> String;
 
 pub fn string_into(input: &str, out: &mut String);
 
-pub const SENSITIVE_HEADERS: &[&str] = &[
+/// Exact case-insensitive match against this set means the header
+/// value must be redacted at DEBUG/TRACE log levels. `phf::Set` keeps
+/// lookup O(1) as the list grows — and it is expected to grow, so the
+/// data-structure choice is future-proofed now rather than later.
+pub static SENSITIVE_HEADERS: phf::Set<&'static str> = phf::phf_set! {
     "authorization",
     "proxy-authorization",
     "cookie",
@@ -68,7 +72,10 @@ pub const SENSITIVE_HEADERS: &[&str] = &[
     "x-goog-api-key",
     "x-anthropic-api-key",
     "x-openai-api-key",
-];
+    // Add more as new providers land. phf's perfect-hash table is
+    // rebuilt at compile time; there is no runtime cost to growing
+    // this list.
+};
 
 pub fn is_sensitive_header(name: &str) -> bool;
 
@@ -132,12 +139,20 @@ pub fn redact_header_value(value: &str) -> String {
 Caller flow in `rtb-cli`'s HTTP middleware at DEBUG:
 `if is_sensitive_header(name) { log.field(name, redact_header_value(value)); }`.
 
-### 2.4 Feature flags
+### 2.4 Feature flags + dependencies
 
-None in v0.1. The crate is small and always-on. All regexes compile once
-via `once_cell::sync::Lazy<Regex>` with literal patterns; no user-supplied
-patterns cross `rtb_app::regex_util` (which is itself a v0.2 deliverable
-alongside `rtb-redact` — see open question O2).
+No Cargo features. The crate is small and always-on. Deps are
+deliberately minimal:
+
+- `regex` — patterns are literal, compiled once via
+  `once_cell::sync::Lazy<Regex>`. No user-supplied patterns; the
+  `rtb_app::regex_util::compile_bounded` helper (itself a v0.2
+  deliverable — see O2) is not needed here.
+- `phf` — compile-time perfect-hash set for `SENSITIVE_HEADERS`.
+- `once_cell` — lazy regex compilation.
+
+No `serde`, no `tracing`, no async runtime. The crate is a pure
+string-to-string function.
 
 ## 3. Acceptance criteria
 
@@ -256,9 +271,13 @@ integration; the redactor itself stays rtb-telemetry-agnostic.
 
 - **O1 — Should the allowlist of provider prefixes be extensible at
   compile time via Cargo features?** e.g. `features = ["aws-sso"]` adds
-  `AQoDYXdz...` prefixes. Proposed resolution: no — if a prefix is
-  well-enough-known to ship, it lands in core. Feature-gated allowlist
-  obscures the security story.
+  `AQoDYXdz...` prefixes. **Resolved: no.** The security story is
+  clearer when every supported prefix is always compiled in — a user
+  cannot accidentally opt out of a prefix by omitting a feature flag,
+  and a tool author cannot narrow the allowlist in the name of binary
+  size at the cost of a future leak. If a prefix is well-enough-known
+  for RTB to ship a rule for, it ships unconditionally. Binary-size
+  cost is negligible (each rule is a small compiled regex).
 - **O2 — `rtb_app::regex_util::compile_bounded`.** The framework spec
   and `CLAUDE.md` § Regex Compilation describe a helper that applies
   `RegexBuilder::size_limit(1 MiB)` + `dfa_size_limit(8 MiB)` + 1 KiB
@@ -272,10 +291,11 @@ integration; the redactor itself stays rtb-telemetry-agnostic.
   redactions apply?** Would save a `String::clone` on the fast path.
   Proposed resolution: yes, `Cow<'_, str>` return. Revisit if it causes
   call-site friction.
-- **O4 — `redact::SENSITIVE_HEADERS` as a `HashSet<&'static str>` vs a
-  slice.** A slice is `O(n)` per check (n ≈ 10 is fine), a `HashSet` is
-  `O(1)` but requires a `Lazy`. Proposed resolution: slice for v0.1;
-  switch to `phf::Set` if/when the list grows past 30.
+- **O4 — `redact::SENSITIVE_HEADERS` data structure.** **Resolved:
+  `phf::Set`** — future-proofed now. New provider integrations (Azure,
+  Cloudflare, Vercel, etc.) will add headers quickly; starting with a
+  slice would mean a future breaking API swap. `phf` is a tiny
+  compile-time dep with no runtime cost.
 - **O5 — Behaviour on invalid UTF-8 input.** `&str` is already UTF-8; a
   caller with a `Vec<u8>` that might not be has to convert first. Should
   we offer a `bytes(input: &[u8]) -> Vec<u8>` variant? Proposed
