@@ -277,8 +277,14 @@ async fn gitea_end_to_end_against_real_container() {
     assert!(upload.status().is_success(), "upload: {}", upload.status());
 
     let r = provider.release_by_tag("v0.1.0").await.expect("by_tag post-upload");
-    let asset = r.assets.iter().find(|a| a.name == "README.txt").expect("uploaded asset present");
-    let (mut reader, _len) = provider.download_asset(asset).await.expect("download");
+    let original = r.assets.iter().find(|a| a.name == "README.txt").expect("asset present");
+    // Gitea bakes `ROOT_URL` (127.0.0.1:3000 — the *container* port)
+    // into generated download URLs. The host-mapped port is
+    // dynamic, so rewrite the asset's URL to point at the port
+    // actually reachable from the test host.
+    let mut asset = original.clone();
+    asset.download_url = asset.download_url.replace("127.0.0.1:3000", &fixture.base);
+    let (mut reader, _len) = provider.download_asset(&asset).await.expect("download");
     let mut bytes = Vec::new();
     reader.read_to_end(&mut bytes).await.expect("read");
     assert_eq!(bytes, b"hello from gitea testcontainer");
