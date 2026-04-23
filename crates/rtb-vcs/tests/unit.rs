@@ -8,8 +8,8 @@
 use std::sync::Arc;
 
 use rtb_vcs::release::{
-    lookup, registered_types, ProviderError, ProviderFactory, RegisteredProvider, Release,
-    ReleaseAsset, ReleaseProvider, RELEASE_PROVIDERS,
+    lookup, registered_types, ProviderError, ProviderFactory, ProviderRegistration,
+    RegisteredProvider, Release, ReleaseAsset, ReleaseProvider, RELEASE_PROVIDERS,
 };
 use rtb_vcs::{
     BitbucketParams, CodebergParams, DirectParams, GiteaParams, GithubParams, GitlabParams,
@@ -66,8 +66,9 @@ fn mock_factory(
 }
 
 #[linkme::distributed_slice(RELEASE_PROVIDERS)]
-static MOCK_REGISTRATION: RegisteredProvider =
-    RegisteredProvider { source_type: "mock-foundation-backend", factory: mock_factory };
+fn __register_mock_foundation() -> Box<dyn ProviderRegistration> {
+    Box::new(RegisteredProvider { source_type: "mock-foundation-backend", factory: mock_factory })
+}
 
 // ---------------------------------------------------------------------
 // Tests
@@ -111,6 +112,7 @@ fn t4_releasesource_config_yaml_roundtrip() {
         repo: "rust-tool-base".into(),
         private: false,
         timeout_seconds: 30,
+        allow_insecure_base_url: false,
     });
     let yaml = serde_yaml::to_string(&cfg).expect("serialise");
     let back: ReleaseSourceConfig = serde_yaml::from_str(&yaml).expect("deserialise");
@@ -225,6 +227,7 @@ fn source_type_discriminators() {
                 repo: "r".into(),
                 private: false,
                 timeout_seconds: 30,
+                allow_insecure_base_url: false,
             }),
             "github",
         ),

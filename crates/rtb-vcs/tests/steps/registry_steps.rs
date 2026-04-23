@@ -29,6 +29,7 @@ fn given_github_config(world: &mut VcsWorld, host: String, owner: String, repo: 
         repo,
         private: false,
         timeout_seconds: 30,
+        allow_insecure_base_url: false,
     }));
 }
 
