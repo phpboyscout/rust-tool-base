@@ -93,7 +93,7 @@ reqwest = { version = "0.12", default-features = false, features = ["rustls-tls"
 url = "2"
 
 # TUI
-ratatui = "0.29"
+ratatui = "0.30"
 crossterm = "0.28"
 termimad = "0.33"
 inquire = "0.8"
@@ -140,6 +140,17 @@ phf = { version = "0.11", features = ["macros"] }
 bon = "3"
 linkme = "0.3"
 
+# Docs rendering + search
+pulldown-cmark = { version = "0.13", default-features = false, features = ["html"] }
+tui-markdown = "0.3"
+tantivy = "0.22"
+fuzzy-matcher = "0.3"
+
+# Axum + hyper for `docs serve`
+axum = { version = "0.8", default-features = false, features = ["tokio", "http1", "query", "json"] }
+hyper = { version = "1", features = ["server", "http1"] }
+hyper-util = { version = "0.1", features = ["server", "tokio"] }
+
 # BDD / testing
 cucumber = { version = "0.21", features = ["macros"] }
 insta = { version = "1", features = ["yaml", "json"] }
@@ -161,7 +172,7 @@ opentelemetry-otlp = { version = "0.31", features = ["grpc-tonic"] }
 tracing-opentelemetry = "0.32"
 
 # HTTP / gRPC server (optional subcommands)
-axum = "0.8"
+# `axum` is declared earlier alongside the rtb-docs deps.
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 tower = "0.5"
 tower-http = { version = "0.6", features = ["trace", "cors"] }

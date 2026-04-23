@@ -41,10 +41,21 @@ const ADMIN_EMAIL: &str = "rtb-admin@example.invalid";
 
 /// Spawn a Gitea container, run one-off admin bootstrap, create a
 /// repo + release, and return the live base URL.
+#[allow(clippy::too_many_lines)]
+// bootstrap has many sequential steps
+// testcontainers `ExecResult` holds non-Send stream types; this future
+// only ever runs on a test reactor.
+#[allow(clippy::future_not_send)]
 async fn setup_gitea() -> GiteaFixture {
     let container = GenericImage::new(GITEA_IMAGE, GITEA_TAG)
         .with_exposed_port(3000.tcp())
-        .with_wait_for(WaitFor::message_on_stderr("Listen: http://0.0.0.0:3000"))
+        // Short Duration wait just pins the startup semantics; we do
+        // the real "is Gitea ready?" probe over HTTP below. The
+        // previous `message_on_stderr("Listen: http://0.0.0.0:3000")`
+        // strategy flaked on `ubuntu-latest` runners — either the
+        // Gitea image's log format drifted or the stream buffering
+        // prevented testcontainers-rs from ever matching the line.
+        .with_wait_for(WaitFor::seconds(2))
         // Skip the interactive installer — disable it via env vars.
         .with_env_var("GITEA__security__INSTALL_LOCK", "true")
         .with_env_var("GITEA__server__ROOT_URL", "http://127.0.0.1:3000/")
@@ -57,34 +68,78 @@ async fn setup_gitea() -> GiteaFixture {
     let host_port = container.get_host_port_ipv4(3000).await.expect("port mapping");
     let base = format!("127.0.0.1:{host_port}");
 
-    // Create the admin user via `gitea admin user create`.
-    let exec = container
+    // Poll the Gitea API until it responds. Replaces the fragile
+    // "listen message on stderr" wait with a direct readiness probe.
+    let ready_client =
+        reqwest::Client::builder().timeout(Duration::from_secs(2)).build().expect("http client");
+    let deadline = std::time::Instant::now() + Duration::from_secs(180);
+    loop {
+        if let Ok(resp) = ready_client.get(format!("http://{base}/api/v1/version")).send().await {
+            if resp.status().is_success() {
+                break;
+            }
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "gitea did not become ready at http://{base}/api/v1/version within 180s",
+        );
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
+
+    // Create the admin user via `gitea admin user create`. Gitea
+    // refuses to run as root (the default user a `docker exec`
+    // lands on), so switch to the `git` user the entrypoint
+    // provisions via `USER_UID`/`USER_GID`. Constants below are
+    // compile-time fixed so shell-quoting is not a concern.
+    let admin_cmd = format!(
+        "gitea admin user create --username {ADMIN_USER} --password {ADMIN_PASS} \
+         --email {ADMIN_EMAIL} --admin --must-change-password=false"
+    );
+    let mut exec = container
         .exec(
             testcontainers::core::ExecCommand::new([
-                "gitea",
-                "admin",
-                "user",
-                "create",
-                "--username",
-                ADMIN_USER,
-                "--password",
-                ADMIN_PASS,
-                "--email",
-                ADMIN_EMAIL,
-                "--admin",
-                "--must-change-password=false",
+                "su", "-s", "/bin/sh", "git", "-c", &admin_cmd,
             ])
             .with_container_ready_conditions(vec![]),
         )
         .await
         .expect("exec admin create");
-    drop(exec);
+    let stdout = exec.stdout_to_vec().await.unwrap_or_default();
+    let stderr = exec.stderr_to_vec().await.unwrap_or_default();
+    let code = exec.exit_code().await.unwrap_or(None);
+    assert_eq!(
+        code,
+        Some(0),
+        "gitea admin user create failed: code={code:?} stdout={} stderr={}",
+        String::from_utf8_lossy(&stdout),
+        String::from_utf8_lossy(&stderr),
+    );
 
-    // Allow the admin user to settle before issuing API calls.
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    // Poll until basic-auth against `GET /api/v1/user` resolves as
+    // the admin. Short sleep-then-retry replaces a fixed 500ms wait
+    // that sometimes wasn't long enough for Gitea to finish
+    // registering the newly-created user.
+    let client = reqwest::Client::new();
+    let admin_deadline = std::time::Instant::now() + Duration::from_secs(30);
+    loop {
+        let probe = client
+            .get(format!("http://{base}/api/v1/user"))
+            .basic_auth(ADMIN_USER, Some(ADMIN_PASS))
+            .send()
+            .await;
+        if let Ok(r) = probe {
+            if r.status().is_success() {
+                break;
+            }
+        }
+        assert!(
+            std::time::Instant::now() < admin_deadline,
+            "admin user basic-auth did not succeed within 30s"
+        );
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
 
     // Create a PAT for the admin so the provider has a token to use.
-    let client = reqwest::Client::new();
     let pat_resp = client
         .post(format!("http://{base}/api/v1/users/{ADMIN_USER}/tokens"))
         .basic_auth(ADMIN_USER, Some(ADMIN_PASS))
@@ -150,63 +205,45 @@ fn build_provider(fixture: &GiteaFixture) -> std::sync::Arc<dyn ReleaseProvider>
     gitea::factory(&cfg, Some(SecretString::from(fixture.token.clone()))).expect("factory")
 }
 
+/// Single end-to-end test that drives every `ReleaseProvider` method
+/// against one live Gitea container.
+///
+/// Split into ordered sub-sections (read happy paths first, asset
+/// upload last) because nextest launches a fresh process per
+/// `#[test]` — five individual tests meant five ~60–120s container
+/// startups per CI run, which chronically flaked the
+/// `WaitContainer(StartupTimeout)` budget on `ubuntu-latest`. One
+/// container, one test process, sequential assertions: one startup,
+/// fast total runtime, no inter-test state to worry about.
 #[tokio::test(flavor = "multi_thread")]
-async fn gitea_latest_release_against_real_container() {
+async fn gitea_end_to_end_against_real_container() {
     let fixture = setup_gitea().await;
     let provider = build_provider(&fixture);
 
+    // latest_release — freshly-created v0.1.0 is the newest release.
     let release = provider.latest_release().await.expect("latest");
     assert_eq!(release.tag, "v0.1.0");
     assert_eq!(release.name, "Release v0.1.0");
-}
 
-#[tokio::test(flavor = "multi_thread")]
-async fn gitea_release_by_tag_against_real_container() {
-    let fixture = setup_gitea().await;
-    let provider = build_provider(&fixture);
-
+    // release_by_tag — happy path + 404.
     let release = provider.release_by_tag("v0.1.0").await.expect("by_tag");
     assert_eq!(release.tag, "v0.1.0");
-
     let err = provider.release_by_tag("does-not-exist").await.expect_err("missing tag should 404");
     assert!(matches!(err, ProviderError::NotFound { .. }), "got {err:?}");
-}
 
-#[tokio::test(flavor = "multi_thread")]
-async fn gitea_list_releases_against_real_container() {
-    let fixture = setup_gitea().await;
-    let provider = build_provider(&fixture);
-
+    // list_releases — exactly one release present.
     let list = provider.list_releases(10).await.expect("list");
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].tag, "v0.1.0");
-}
 
-#[tokio::test(flavor = "multi_thread")]
-async fn gitea_codeberg_delegation_path_end_to_end() {
-    // Exercise the codeberg `source_type` alias against the Gitea
-    // container. We build the config as a Gitea provider because
-    // Codeberg's factory hard-codes `codeberg.org`; this test
-    // instead verifies that the Gitea API shape — which Codeberg
-    // inherits — works end-to-end for the same endpoints the
-    // codeberg factory would use.
-    let fixture = setup_gitea().await;
-    let provider = build_provider(&fixture);
-    let list = provider.list_releases(1).await.expect("list");
+    // Codeberg delegation path — Codeberg's factory hard-codes
+    // `codeberg.org`, so we re-use the Gitea provider here and simply
+    // assert that the same endpoint shape Codeberg inherits works.
+    let list = provider.list_releases(1).await.expect("list (codeberg path)");
     assert!(!list.is_empty(), "Codeberg-delegation path should see the fixture release");
-}
 
-/// Upload an asset and verify streaming download.
-///
-/// Asset upload requires a different Gitea API call than the release
-/// creation above. Done in its own test to keep the happy-path
-/// tests simple.
-#[tokio::test(flavor = "multi_thread")]
-async fn gitea_download_asset_against_real_container() {
-    let fixture = setup_gitea().await;
+    // Asset upload + streaming download.
     let client = reqwest::Client::new();
-
-    // Look up the release ID.
     let release_resp = client
         .get(format!(
             "http://{base}/api/v1/repos/{ADMIN_USER}/widget/releases/tags/v0.1.0",
@@ -220,7 +257,6 @@ async fn gitea_download_asset_against_real_container() {
     let release_json: serde_json::Value = release_resp.json().await.expect("json");
     let release_id = release_json["id"].as_u64().expect("id");
 
-    // Upload a small text asset.
     let form = reqwest::multipart::Form::new().part(
         "attachment",
         reqwest::multipart::Part::bytes(b"hello from gitea testcontainer".to_vec())
@@ -240,13 +276,15 @@ async fn gitea_download_asset_against_real_container() {
         .expect("upload");
     assert!(upload.status().is_success(), "upload: {}", upload.status());
 
-    // Re-fetch the release through our provider to pick up the asset
-    // URL.
-    let provider = build_provider(&fixture);
-    let r = provider.release_by_tag("v0.1.0").await.expect("by_tag");
-    let asset = r.assets.iter().find(|a| a.name == "README.txt").expect("uploaded asset present");
-
-    let (mut reader, _len) = provider.download_asset(asset).await.expect("download");
+    let r = provider.release_by_tag("v0.1.0").await.expect("by_tag post-upload");
+    let original = r.assets.iter().find(|a| a.name == "README.txt").expect("asset present");
+    // Gitea bakes `ROOT_URL` (127.0.0.1:3000 — the *container* port)
+    // into generated download URLs. The host-mapped port is
+    // dynamic, so rewrite the asset's URL to point at the port
+    // actually reachable from the test host.
+    let mut asset = original.clone();
+    asset.download_url = asset.download_url.replace("127.0.0.1:3000", &fixture.base);
+    let (mut reader, _len) = provider.download_asset(&asset).await.expect("download");
     let mut bytes = Vec::new();
     reader.read_to_end(&mut bytes).await.expect("read");
     assert_eq!(bytes, b"hello from gitea testcontainer");
