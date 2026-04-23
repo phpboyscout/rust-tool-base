@@ -7,8 +7,13 @@
 //!   (`spawn_blocking`) for async call sites.
 //! * Token resolution uses `secrecy::SecretString` end-to-end — the in-memory
 //!   secret is zeroed on drop and never logged.
+//!
+//! **Status:** stub awaiting its real v0.1 spec + implementation.
+//! Target milestone is **v0.5**; see the framework spec's Roadmap
+//! (§16) in `docs/development/specs/rust-tool-base.md`.
 
-// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
+// Stub crate — remove `#![allow(missing_docs)]` when the real surface
+// is documented. See the framework spec Roadmap for the target version.
 #![allow(missing_docs)]
 
 pub struct Repo;

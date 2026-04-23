@@ -9,8 +9,13 @@
 //! Structured output uses `schemars::JsonSchema` on caller-supplied types;
 //! the schema is sent with the request and the response is validated with
 //! `jsonschema` before deserialising.
+//!
+//! **Status:** stub awaiting its real v0.1 spec + implementation.
+//! Target milestone is **v0.3**; see the framework spec's Roadmap
+//! (§16) in `docs/development/specs/rust-tool-base.md`.
 
-// TODO: remove when this crate ships v0.1 — docs are added alongside implementation.
+// Stub crate — remove `#![allow(missing_docs)]` when the real surface
+// is documented. See the framework spec Roadmap for the target version.
 #![allow(missing_docs)]
 
 pub struct AiClient;

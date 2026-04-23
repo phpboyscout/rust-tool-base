@@ -371,8 +371,17 @@ attribute fills that role.
 
 ## 8. Built-in commands
 
+> **Status (as of v0.1):** `version`, `doctor`, `init`, `config show`
+> ship as real implementations. `update`, `docs`, `mcp` ship as
+> feature-gated **stubs** that return `Error::FeatureDisabled(...)` —
+> real implementations land with their respective crates
+> (`rtb-update` v0.2, `rtb-docs` v0.2, `rtb-mcp` v0.3). `changelog`
+> is not yet wired. `--output json` is deferred to v0.2. See §16 for
+> the full roadmap.
+
 All built-ins are registered into `BUILTIN_COMMANDS` behind Cargo features
-and runtime-filtered by `Features`. Each supports `--output text|json`.
+and runtime-filtered by `Features`. Each supports `--output text|json`
+(v0.2).
 
 ### 8.1 `init`
 
@@ -435,6 +444,13 @@ and runtime-filtered by `Features`. Each supports `--output text|json`.
 
 ## 9. VCS & release providers (`rtb-vcs`)
 
+> **Status:** ⏳ **deferred to v0.5.** `rtb-vcs` exists as a stub
+> crate in the workspace (so the dependency graph compiles) but its
+> public surface is not yet implemented. `rtb-update` v0.2 will
+> start with a hard-coded GitHub path via `self_update` and migrate
+> to `ReleaseProvider` when this crate ships. See §16 for the full
+> roadmap.
+
 ### 9.1 Release provider trait
 
 ```rust
@@ -482,6 +498,13 @@ logged or debug-printed.
 ---
 
 ## 10. AI client (`rtb-ai`)
+
+> **Status:** ⏳ **deferred to v0.3.** `rtb-ai` exists as a stub
+> crate. The spec below is the design target; nothing in this
+> section is yet implemented. Credentials for AI providers will
+> flow through [`rtb-credentials`](#13-security-requirements-normative)'s
+> `Resolver` — that part is v0.1 shipped. See §16 for the full
+> roadmap.
 
 ### 10.1 Providers
 
@@ -548,7 +571,15 @@ CancellationToken)` but does not define a new abstraction.
 
 ## 12. Command authoring experience
 
-### 12.1 Macro
+> **Status (as of v0.1):** the `#[rtb::command]` attribute macro is
+> **deferred to v0.2+** (pending a real usage pattern to crystallise
+> around). v0.1 command authoring is hand-written `impl Command`
+> with inline `CommandSpec` + a `#[distributed_slice(BUILTIN_COMMANDS)]`
+> factory. Error ergonomics (§12.2) ARE shipped. See
+> [`examples/minimal`](https://github.com/phpboyscout/rust-tool-base/tree/main/examples/minimal)
+> for the v0.1 pattern.
+
+### 12.1 Macro (deferred)
 
 ```rust
 use rtb::prelude::*;
@@ -633,20 +664,35 @@ return Err(miette::miette!(
 
 ## 15. Acceptance criteria — 0.1 release
 
+> **Status:** ✅ **0.1.0 shipped 2026-04-22.** All 7 criteria below
+> are closed (1–7). Criterion 8 (`rtb-cli-bin` scaffolder) deferred
+> to v0.6 per the roadmap revision. See `CHANGELOG.md` for the
+> per-crate detail.
+
 Minimum shippable scope:
 
-1. Workspace compiles clean (`just ci`).
-2. `rtb-core` exposes `App`, `Application::builder()`, `ToolMetadata`,
-   `Features`, `Command` trait.
-3. `rtb-config` supports env + user file + embedded default layering,
-   typed via `serde::Deserialize`. Hot-reload optional but present.
-4. `rtb-assets` exposes the overlay FS with YAML/JSON/TOML deep merging.
-5. `rtb-error` exposes the `Error` enum and `miette` hook helpers.
-6. `rtb-cli` wires the above and ships the following built-ins:
-   `version`, `config`, `doctor`, `init`. `update`, `docs`, `mcp` may be
-   stubs that return `Error::FeatureDisabled` until 0.2.
-7. `examples/minimal` runs end-to-end on Linux/macOS/Windows.
-8. `rtb-cli-bin` scaffolds a new project (`rtb new`).
+1. ✅ Workspace compiles clean (`just ci`).
+2. ✅ `rtb-core` exposes `App`, `ToolMetadata`, `Features`,
+   `Command` trait, `BUILTIN_COMMANDS`. (`Application::builder`
+   lives in `rtb-cli` rather than `rtb-core`.)
+3. ✅ `rtb-config` supports env + user file + embedded default
+   layering, typed via `serde::Deserialize`. Explicit `reload()`
+   ships; reactive `subscribe()` + notify-driven auto-reload
+   deferred to v0.2.
+4. ✅ `rtb-assets` exposes the overlay FS with YAML/JSON deep
+   merging. TOML deep-merge deferred to v0.2.
+5. ✅ `rtb-error` exposes the `Error` enum and `miette` hook
+   helpers.
+6. ✅ `rtb-cli` wires the above and ships `version`, `doctor`,
+   `init`, `config show`. `update`, `docs`, `mcp` ship as
+   `FeatureDisabled` stubs that get replaced by their respective
+   crates' v0.2+ registrations (see §8).
+7. ✅ `examples/minimal` runs end-to-end on Linux/macOS/Windows
+   and is covered by an `assert_cmd` smoke test in
+   `examples/minimal/tests/smoke.rs`.
+8. ⏳ `rtb-cli-bin` scaffolds a new project (`rtb new`). Deferred
+   to **v0.6**; v0.1 ships the binary as a stub to reserve the
+   `rtb` command name.
 
 ---
 

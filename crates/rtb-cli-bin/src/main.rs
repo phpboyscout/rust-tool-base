@@ -10,8 +10,9 @@
 //! This binary is intentionally separate from `rtb-cli` (the library) so
 //! downstream tools don't pull in `minijinja`, prompt libraries, etc.
 
-// TODO: remove when this binary ships v0.1 — the real subcommand dispatch
-// will exercise the Result path, silencing clippy::unnecessary_wraps.
+// Stub binary — the real subcommand dispatch lands at v0.6 per the
+// framework spec Roadmap (§16). Remove `#![allow(clippy::unnecessary_wraps)]`
+// when the dispatch exercises the Result path.
 #![allow(clippy::unnecessary_wraps)]
 
 fn main() -> miette::Result<()> {

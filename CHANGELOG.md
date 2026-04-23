@@ -17,6 +17,11 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   for security, concurrency, documentation, and testing discipline.
   Referenced from `CLAUDE.md` so agents picking up the project
   inherit the rules.
+- `examples/minimal/tests/smoke.rs` — `assert_cmd` smoke test for
+  the reference example. Every README/quick-start contract (greet
+  output, version shape, doctor exit status, help listing, unknown-
+  subcommand error, update-stub diagnostic) is now rustc+runtime
+  validated via `cargo test`. Prevents silent docs/code drift.
 - **Zensical microsite infrastructure.** `zensical.toml` at repo
   root carries the theme + status taxonomy; `requirements-lock.txt`
   hash-pins the Python toolchain (zensical 0.0.33 + transitives)
@@ -64,6 +69,19 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   Matches the go-tool-base documentation style; ready for Zensical
   microsite generation.
 - `docs/index.md` rewritten as a landing page for the docs tree.
+- **Framework spec sections annotated with shipped-vs-deferred
+  status.** §8 (built-in commands) calls out which built-ins are
+  real and which are `FeatureDisabled` stubs; §9 (VCS), §10 (AI),
+  §12.1 (`#[rtb::command]` macro) now carry explicit "deferred to
+  v0.X" callouts so readers dropping into the middle of the spec
+  see what ships in v0.1 without scrolling to §16. §15 (0.1
+  acceptance criteria) marks every bullet ✅ shipped / ⏳ deferred.
+- **Stub-crate doc headers normalised.** All seven stubs
+  (`rtb-update`, `rtb-vcs`, `rtb-ai`, `rtb-mcp`, `rtb-docs`,
+  `rtb-tui`, `rtb-cli-bin`) now lead with `//!` module docs, carry
+  an explicit `**Status:** stub awaiting v0.X` line, and share a
+  common `#![allow(missing_docs)]` pointer to the framework-spec
+  roadmap.
 - `rtb-telemetry::Event::attrs` docstring lists explicit
   don't-pass-here categories.
 - `rtb-telemetry::TelemetryContextBuilder::salt` docstring
