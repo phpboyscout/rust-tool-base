@@ -4531,6 +4531,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "rtb-test-support"
+version = "0.1.0"
+dependencies = [
+ "rtb-assets",
+ "rtb-config",
+ "rtb-core",
+ "semver",
+ "tokio-util",
+]
+
+[[package]]
 name = "rtb-tui"
 version = "0.1.0"
 dependencies = [

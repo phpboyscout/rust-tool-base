@@ -1,0 +1,24 @@
+[package]
+name = "rtb-test-support"
+description = "Rust Tool Base — test-only helpers for constructing App contexts without the full rtb-cli wiring."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+readme.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+categories.workspace = true
+keywords.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+rtb-core = { path = "../rtb-core", version = "0.1.0" }
+rtb-config = { path = "../rtb-config", version = "0.1.0" }
+rtb-assets = { path = "../rtb-assets", version = "0.1.0" }
+tokio-util = { workspace = true }
+semver = { workspace = true }

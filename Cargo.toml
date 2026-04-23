@@ -15,6 +15,7 @@ members = [
     "crates/rtb-tui",
     "crates/rtb-credentials",
     "crates/rtb-telemetry",
+    "crates/rtb-test-support",
     "crates/rtb-cli-bin",
     "examples/minimal",
 ]
