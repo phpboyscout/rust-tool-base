@@ -155,63 +155,45 @@ fn build_provider(fixture: &GiteaFixture) -> std::sync::Arc<dyn ReleaseProvider>
     gitea::factory(&cfg, Some(SecretString::from(fixture.token.clone()))).expect("factory")
 }
 
+/// Single end-to-end test that drives every `ReleaseProvider` method
+/// against one live Gitea container.
+///
+/// Split into ordered sub-sections (read happy paths first, asset
+/// upload last) because nextest launches a fresh process per
+/// `#[test]` — five individual tests meant five ~60–120s container
+/// startups per CI run, which chronically flaked the
+/// `WaitContainer(StartupTimeout)` budget on `ubuntu-latest`. One
+/// container, one test process, sequential assertions: one startup,
+/// fast total runtime, no inter-test state to worry about.
 #[tokio::test(flavor = "multi_thread")]
-async fn gitea_latest_release_against_real_container() {
+async fn gitea_end_to_end_against_real_container() {
     let fixture = setup_gitea().await;
     let provider = build_provider(&fixture);
 
+    // latest_release — freshly-created v0.1.0 is the newest release.
     let release = provider.latest_release().await.expect("latest");
     assert_eq!(release.tag, "v0.1.0");
     assert_eq!(release.name, "Release v0.1.0");
-}
 
-#[tokio::test(flavor = "multi_thread")]
-async fn gitea_release_by_tag_against_real_container() {
-    let fixture = setup_gitea().await;
-    let provider = build_provider(&fixture);
-
+    // release_by_tag — happy path + 404.
     let release = provider.release_by_tag("v0.1.0").await.expect("by_tag");
     assert_eq!(release.tag, "v0.1.0");
-
     let err = provider.release_by_tag("does-not-exist").await.expect_err("missing tag should 404");
     assert!(matches!(err, ProviderError::NotFound { .. }), "got {err:?}");
-}
 
-#[tokio::test(flavor = "multi_thread")]
-async fn gitea_list_releases_against_real_container() {
-    let fixture = setup_gitea().await;
-    let provider = build_provider(&fixture);
-
+    // list_releases — exactly one release present.
     let list = provider.list_releases(10).await.expect("list");
     assert_eq!(list.len(), 1);
     assert_eq!(list[0].tag, "v0.1.0");
-}
 
-#[tokio::test(flavor = "multi_thread")]
-async fn gitea_codeberg_delegation_path_end_to_end() {
-    // Exercise the codeberg `source_type` alias against the Gitea
-    // container. We build the config as a Gitea provider because
-    // Codeberg's factory hard-codes `codeberg.org`; this test
-    // instead verifies that the Gitea API shape — which Codeberg
-    // inherits — works end-to-end for the same endpoints the
-    // codeberg factory would use.
-    let fixture = setup_gitea().await;
-    let provider = build_provider(&fixture);
-    let list = provider.list_releases(1).await.expect("list");
+    // Codeberg delegation path — Codeberg's factory hard-codes
+    // `codeberg.org`, so we re-use the Gitea provider here and simply
+    // assert that the same endpoint shape Codeberg inherits works.
+    let list = provider.list_releases(1).await.expect("list (codeberg path)");
     assert!(!list.is_empty(), "Codeberg-delegation path should see the fixture release");
-}
 
-/// Upload an asset and verify streaming download.
-///
-/// Asset upload requires a different Gitea API call than the release
-/// creation above. Done in its own test to keep the happy-path
-/// tests simple.
-#[tokio::test(flavor = "multi_thread")]
-async fn gitea_download_asset_against_real_container() {
-    let fixture = setup_gitea().await;
+    // Asset upload + streaming download.
     let client = reqwest::Client::new();
-
-    // Look up the release ID.
     let release_resp = client
         .get(format!(
             "http://{base}/api/v1/repos/{ADMIN_USER}/widget/releases/tags/v0.1.0",
@@ -225,7 +207,6 @@ async fn gitea_download_asset_against_real_container() {
     let release_json: serde_json::Value = release_resp.json().await.expect("json");
     let release_id = release_json["id"].as_u64().expect("id");
 
-    // Upload a small text asset.
     let form = reqwest::multipart::Form::new().part(
         "attachment",
         reqwest::multipart::Part::bytes(b"hello from gitea testcontainer".to_vec())
@@ -245,12 +226,8 @@ async fn gitea_download_asset_against_real_container() {
         .expect("upload");
     assert!(upload.status().is_success(), "upload: {}", upload.status());
 
-    // Re-fetch the release through our provider to pick up the asset
-    // URL.
-    let provider = build_provider(&fixture);
-    let r = provider.release_by_tag("v0.1.0").await.expect("by_tag");
+    let r = provider.release_by_tag("v0.1.0").await.expect("by_tag post-upload");
     let asset = r.assets.iter().find(|a| a.name == "README.txt").expect("uploaded asset present");
-
     let (mut reader, _len) = provider.download_asset(asset).await.expect("download");
     let mut bytes = Vec::new();
     reader.read_to_end(&mut bytes).await.expect("read");
