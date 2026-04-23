@@ -44,23 +44,42 @@ const ADMIN_EMAIL: &str = "rtb-admin@example.invalid";
 async fn setup_gitea() -> GiteaFixture {
     let container = GenericImage::new(GITEA_IMAGE, GITEA_TAG)
         .with_exposed_port(3000.tcp())
-        .with_wait_for(WaitFor::message_on_stderr("Listen: http://0.0.0.0:3000"))
+        // Short Duration wait just pins the startup semantics; we do
+        // the real "is Gitea ready?" probe over HTTP below. The
+        // previous `message_on_stderr("Listen: http://0.0.0.0:3000")`
+        // strategy flaked on `ubuntu-latest` runners — either the
+        // Gitea image's log format drifted or the stream buffering
+        // prevented testcontainers-rs from ever matching the line.
+        .with_wait_for(WaitFor::seconds(2))
         // Skip the interactive installer — disable it via env vars.
         .with_env_var("GITEA__security__INSTALL_LOCK", "true")
         .with_env_var("GITEA__server__ROOT_URL", "http://127.0.0.1:3000/")
         .with_env_var("USER_UID", "1000")
         .with_env_var("USER_GID", "1000")
-        // GitHub Actions `ubuntu-latest` runners regularly exceed the
-        // testcontainers-rs default 60-second startup window on the
-        // first image pull; bump to 180s so a slow runner doesn't
-        // flake the suite.
-        .with_startup_timeout(Duration::from_secs(180))
         .start()
         .await
         .expect("gitea container start");
 
     let host_port = container.get_host_port_ipv4(3000).await.expect("port mapping");
     let base = format!("127.0.0.1:{host_port}");
+
+    // Poll the Gitea API until it responds. Replaces the fragile
+    // "listen message on stderr" wait with a direct readiness probe.
+    let ready_client =
+        reqwest::Client::builder().timeout(Duration::from_secs(2)).build().expect("http client");
+    let deadline = std::time::Instant::now() + Duration::from_secs(180);
+    loop {
+        if let Ok(resp) = ready_client.get(format!("http://{base}/api/v1/version")).send().await {
+            if resp.status().is_success() {
+                break;
+            }
+        }
+        assert!(
+            std::time::Instant::now() < deadline,
+            "gitea did not become ready at http://{base}/api/v1/version within 180s",
+        );
+        tokio::time::sleep(Duration::from_millis(500)).await;
+    }
 
     // Create the admin user via `gitea admin user create`.
     let exec = container
