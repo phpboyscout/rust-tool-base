@@ -27,10 +27,10 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with: { components: clippy }
       - uses: Swatinem/rust-cache@v2
-      # Linux runners have libdbus-1-dev + pkg-config pre-installed, so
-      # --all-features (which activates credentials-linux-persistent)
-      # builds cleanly here. Local `just lint` uses the default feature
-      # set instead.
+      # `--all-features` activates `credentials-linux-persistent`, which
+      # pulls in `libdbus-sys` for Secret Service. `ubuntu-latest` doesn't
+      # ship dbus headers, so install them before linting.
+      - run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
       - run: cargo clippy --workspace --all-targets --all-features
 
   test:
@@ -45,11 +45,14 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@nextest
-      # Linux: all features (including opt-in dbus) — runners ship
-      # libdbus. macOS / Windows: default features — `credentials-
-      # linux-persistent` is a Linux-only feature and not relevant.
+      # Linux: `--all-features` activates `credentials-linux-persistent`,
+      # which needs libdbus-1-dev for Secret Service.
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
       - if: runner.os == 'Linux'
         run: cargo nextest run --workspace --all-features
+      # macOS / Windows: default features — `credentials-linux-persistent`
+      # is a Linux-only feature and not relevant.
       - if: runner.os != 'Linux'
         run: cargo nextest run --workspace
 
@@ -67,6 +70,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
+      - run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
       - run: cargo doc --workspace --no-deps --all-features
         env:
           RUSTDOCFLAGS: "-D warnings"
@@ -80,6 +84,7 @@ jobs:
         with: { components: llvm-tools-preview }
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cargo-llvm-cov
+      - run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
       - run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
       - run: cargo llvm-cov report --fail-under-lines 70
       - uses: actions/upload-artifact@v4

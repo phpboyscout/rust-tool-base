@@ -25,5 +25,11 @@ use steps::ConfigWorld;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn bdd() {
-    ConfigWorld::cucumber().fail_on_skipped().run_and_exit("tests/features").await;
+    // `with_default_cli` skips cucumber's own CLI parsing so we don't fight
+    // libtest/nextest over `std::env::args()` (nextest passes `--exact <name>`).
+    ConfigWorld::cucumber()
+        .with_default_cli()
+        .fail_on_skipped()
+        .run_and_exit("tests/features")
+        .await;
 }

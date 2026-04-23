@@ -4,10 +4,22 @@
 [advisories]
 db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "deny"
+# Advisories waived explicitly — all `unmaintained` (no CVE), all reached
+# via transitive deps of deferred stub crates that will be reworked before
+# their ship milestones.
+ignore = [
+    # `instant` — reached via async-openai → backoff → rtb-ai (v0.3 target).
+    "RUSTSEC-2024-0384",
+    # `paste` — reached via ratatui → rtb-docs (v0.2) / rtb-tui (v0.4).
+    "RUSTSEC-2024-0436",
+    # `number_prefix` — reached via self_update → indicatif → rtb-update (v0.2).
+    "RUSTSEC-2025-0119",
+]
 
 [licenses]
 allow = [
     "MIT",
+    "MIT-0",
     "Apache-2.0",
     "Apache-2.0 WITH LLVM-exception",
     "BSD-2-Clause",
@@ -19,6 +31,8 @@ allow = [
     "CC0-1.0",
     "MPL-2.0",
     "0BSD",
+    # Community Data License — used by webpki-roots for the root-cert store.
+    "CDLA-Permissive-2.0",
 ]
 confidence-threshold = 0.8
 
