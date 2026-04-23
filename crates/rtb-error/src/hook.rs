@@ -83,18 +83,62 @@ impl RtbReportHandler {
     }
 }
 
+thread_local! {
+    /// Re-entry guard for [`RtbReportHandler::debug`]. When a footer
+    /// closure panics and the installed `miette` panic hook is
+    /// active, the hook may render the panic *through this same
+    /// handler* — which would re-invoke the (panicking) footer and
+    /// produce a double-panic abort. This flag makes the nested
+    /// render skip the footer step entirely.
+    static IN_RENDER: std::cell::Cell<bool> = const { std::cell::Cell::new(false) };
+}
+
 impl ReportHandler for RtbReportHandler {
     fn debug(&self, diagnostic: &dyn Diagnostic, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.inner.render_report(f, diagnostic)?;
-        if let Some(slot) = FOOTER.get() {
-            if let Ok(guard) = slot.read() {
-                if let Some(footer) = guard.as_ref() {
-                    let text = footer();
-                    if !text.is_empty() {
-                        writeln!(f)?;
-                        writeln!(f, "{text}")?;
-                    }
-                }
+
+        // Skip the footer if we're already inside a render (we're
+        // being re-entered by miette's panic hook rendering a panic
+        // that occurred inside *our* footer closure).
+        if IN_RENDER.with(std::cell::Cell::get) {
+            return Ok(());
+        }
+
+        // Capture the footer closure's output with `catch_unwind` so a
+        // panicking closure cannot poison the `FOOTER` RwLock. The
+        // read guard is released before we emit to the formatter.
+        let maybe_text = {
+            let Some(slot) = FOOTER.get() else {
+                return Ok(());
+            };
+            let Ok(guard) = slot.read() else {
+                // Lock poisoned by a concurrent writer; suppress.
+                return Ok(());
+            };
+            let Some(footer) = guard.as_ref() else {
+                return Ok(());
+            };
+
+            // Mark re-entry so a panic during the footer call, if it
+            // recurses through the installed panic hook, short-
+            // circuits without invoking the footer again.
+            IN_RENDER.with(|flag| flag.set(true));
+            // clippy::redundant_closure is triggered here because
+            // `footer` is callable, but we need to wrap in a closure
+            // so `catch_unwind` has a `FnOnce() -> String` of the
+            // correct shape (footer is `&Box<dyn Fn() -> String>`).
+            #[allow(clippy::redundant_closure)]
+            let outcome =
+                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| footer()));
+            IN_RENDER.with(|flag| flag.set(false));
+
+            outcome.ok()
+        };
+
+        if let Some(text) = maybe_text {
+            if !text.is_empty() {
+                writeln!(f)?;
+                writeln!(f, "{text}")?;
             }
         }
         Ok(())

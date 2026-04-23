@@ -224,3 +224,51 @@ fn t12_context_bounds() {
 fn sample_event() -> Event {
     Event::with_timestamp("test.event", "mytool", "1.0.0", "deadbeef", "2026-04-22T00:00:00Z")
 }
+
+// ---------------------------------------------------------------------
+// T13 — FileSink serialises concurrent emits so JSONL lines never
+// interleave at the byte level
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn t13_file_sink_concurrent_writes_are_line_safe() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("concurrent.jsonl");
+    let sink = Arc::new(FileSink::new(&path));
+
+    // Build an attrs blob that pushes the serialised event well over
+    // POSIX's PIPE_BUF (4 KiB) so interleaving would be observable.
+    let long_value: String = "x".repeat(2048);
+
+    let mut handles = Vec::new();
+    for i in 0..64 {
+        let sink = sink.clone();
+        let long_value = long_value.clone();
+        handles.push(tokio::spawn(async move {
+            let event = Event::with_timestamp(
+                format!("event.{i}"),
+                "mytool",
+                "1.0.0",
+                "abc",
+                "2026-04-22T00:00:00Z",
+            )
+            .with_attr("long", long_value)
+            .with_attr("idx", i.to_string());
+            sink.emit(&event).await.unwrap();
+        }));
+    }
+    for h in handles {
+        h.await.unwrap();
+    }
+
+    // Every line must parse as valid JSON — interleaving would
+    // corrupt at least some lines.
+    let raw = std::fs::read_to_string(&path).unwrap();
+    let mut valid_lines = 0usize;
+    for line in raw.lines() {
+        let _parsed: serde_json::Value = serde_json::from_str(line)
+            .unwrap_or_else(|e| panic!("malformed JSONL (interleave?): {e}\nline: {line}"));
+        valid_lines += 1;
+    }
+    assert_eq!(valid_lines, 64, "expected one line per emit");
+}

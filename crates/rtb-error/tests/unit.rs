@@ -215,3 +215,39 @@ fn t12_install_with_footer_appends_text() {
         "expected footer to be appended; got:\n{rendered}"
     );
 }
+
+// ---------------------------------------------------------------------
+// T13 — a panicking footer closure does not poison the hook
+//
+// A misbehaving footer closure (one that panics) must not leave the
+// render pipeline unusable. The catch_unwind inside RtbReportHandler
+// suppresses the footer for that render and lets the rest of the
+// diagnostic render normally.
+// ---------------------------------------------------------------------
+
+#[test]
+fn t13_panicking_footer_does_not_poison_hook() {
+    // Install a footer that always panics.
+    rtb_error::hook::install_with_footer(|| {
+        panic!("deliberate footer panic for T13");
+    });
+
+    // Render a diagnostic. This must not panic; the footer is
+    // silently suppressed.
+    let report = miette::Report::new(Error::FeatureDisabled("t13-feature"));
+    let rendered = format!("{report:?}");
+    assert!(
+        rendered.contains("feature `t13-feature`"),
+        "diagnostic body must still render despite footer panic; got:\n{rendered}",
+    );
+
+    // Now swap in a non-panicking footer and confirm the hook is not
+    // poisoned (install_with_footer must still apply).
+    rtb_error::hook::install_with_footer(|| "post-panic footer".to_string());
+    let second = miette::Report::new(Error::FeatureDisabled("t13-recovery"));
+    let rendered = format!("{second:?}");
+    assert!(
+        rendered.contains("post-panic footer"),
+        "post-panic footer install must be observable; got:\n{rendered}",
+    );
+}

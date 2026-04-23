@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 
-use rtb_assets::{AssetError, Assets};
+use rtb_assets::{AssetError, Assets, DirectorySource};
 use serde::Deserialize;
 
 fn mem(label: &str, files: &[(&str, &[u8])]) -> HashMap<String, Vec<u8>> {
@@ -214,4 +214,41 @@ fn t13_rust_embed_adapter() {
     assert!(txt.contains("world"), "expected greeting, got: {txt}");
     let entries = a.list_dir(".");
     assert!(entries.contains(&"hello.txt".to_string()));
+}
+
+// ---------------------------------------------------------------------
+// T14 — DirectorySource rejects path traversal attempts
+// ---------------------------------------------------------------------
+
+#[test]
+fn t14_directory_source_rejects_parent_traversal() {
+    use std::sync::Arc;
+
+    let dir = tempfile::tempdir().expect("tempdir");
+
+    // Write a sibling file outside the asset root; the source must
+    // NOT be able to read it.
+    let secret_path = dir.path().join("secret.txt");
+    std::fs::write(&secret_path, b"do not leak").expect("write secret");
+
+    // Asset root is a subdirectory; attempts to escape it via `..`
+    // must fail.
+    let assets_root = dir.path().join("assets");
+    std::fs::create_dir_all(&assets_root).expect("mkdir");
+    std::fs::write(assets_root.join("allowed.txt"), b"ok").expect("write allowed");
+
+    let src = Arc::new(DirectorySource::new(&assets_root, "t14"));
+    let a = Assets::builder().source(src).build();
+
+    // Sanity: in-root file is readable.
+    assert_eq!(a.open_text("allowed.txt").unwrap(), "ok");
+
+    // Traversal attempts return None.
+    assert_eq!(a.open("../secret.txt"), None, "parent traversal must fail");
+    assert_eq!(a.open("../../etc/passwd"), None, "multi-level traversal must fail");
+    assert_eq!(a.open("./../secret.txt"), None, "./.. traversal must fail");
+
+    // Absolute paths are rejected.
+    let abs = secret_path.to_str().unwrap();
+    assert_eq!(a.open(abs), None, "absolute path must fail");
 }

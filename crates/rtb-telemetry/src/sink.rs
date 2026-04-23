@@ -93,11 +93,29 @@ impl TelemetrySink for MemorySink {
 /// Appends events as JSON Lines to a file. Parent directories are
 /// created on demand.
 ///
-/// Each `emit` opens the file in append mode, writes the JSON line,
-/// and closes. Batching lives in a wrapper sink when we need it.
+/// # Concurrency and line integrity
+///
+/// Concurrent `emit` calls on the same `FileSink` are serialised via
+/// a shared `tokio::sync::Mutex`. This is required for JSONL
+/// correctness: on POSIX, `O_APPEND` only guarantees atomicity for
+/// individual `write()` calls up to `PIPE_BUF` (4 KiB on Linux). An
+/// event whose serialised form exceeds that bound — plausible for
+/// events with many attrs — would interleave at the byte level with
+/// concurrent writers and produce malformed JSONL.
+///
+/// Cross-**process** writers (two `FileSink`s in different processes
+/// targeting the same file) remain interleaving-safe only up to
+/// `PIPE_BUF`. Don't do that; use per-process files and aggregate
+/// elsewhere.
+///
+/// Batching lives in a wrapper sink when we need it (v0.2).
 #[derive(Debug, Clone)]
 pub struct FileSink {
     path: PathBuf,
+    // Serialises concurrent `emit` calls. Shared across `Clone`s of
+    // the same `FileSink` so multiple handles to the same path also
+    // serialise correctly.
+    gate: Arc<tokio::sync::Mutex<()>>,
 }
 
 impl FileSink {
@@ -106,16 +124,23 @@ impl FileSink {
     /// demand at that point.
     #[must_use]
     pub fn new(path: impl Into<PathBuf>) -> Self {
-        Self { path: path.into() }
+        Self { path: path.into(), gate: Arc::new(tokio::sync::Mutex::new(())) }
     }
 }
 
 #[async_trait]
 impl TelemetrySink for FileSink {
     async fn emit(&self, event: &Event) -> Result<(), TelemetryError> {
+        // Serialise the line outside the critical section — parsing
+        // the event is the expensive part.
         let mut line =
             serde_json::to_string(event).map_err(|e| TelemetryError::Serde(e.to_string()))?;
         line.push('\n');
+
+        // Hold the write gate across parent-dir creation + open +
+        // write + flush so concurrent `emit` calls never interleave
+        // bytes.
+        let _guard = self.gate.lock().await;
 
         if let Some(parent) = self.path.parent() {
             if !parent.as_os_str().is_empty() {

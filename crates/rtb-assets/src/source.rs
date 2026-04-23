@@ -106,30 +106,75 @@ impl DirectorySource {
         Self { root: root.into(), name: name.into() }
     }
 
-    fn resolve(&self, path: &str) -> PathBuf {
-        self.root.join(path)
+    /// Resolve `path` against the root, rejecting any traversal that
+    /// would escape the root.
+    ///
+    /// Returns `None` if:
+    /// * `path` is absolute,
+    /// * any component is a prefix/`..`/`.` that could walk upward,
+    /// * the lexical resolution falls outside `self.root`.
+    ///
+    /// Relative paths without `..` components resolve to
+    /// `root.join(path)` as expected.
+    fn resolve(&self, path: &str) -> Option<PathBuf> {
+        safe_join(&self.root, path)
     }
 }
 
 impl AssetSource for DirectorySource {
     fn read(&self, path: &str) -> Option<Vec<u8>> {
-        fs::read(self.resolve(path)).ok()
+        let resolved = self.resolve(path)?;
+        fs::read(resolved).ok()
     }
 
     fn list(&self, dir: &str) -> Vec<String> {
-        let target: &Path = if dir.is_empty() || dir == "." {
-            self.root.as_path()
-        } else {
-            // Build a borrowed path by joining; cannot return a
-            // reference to a local, so fall through to an owned join.
-            return list_owned(&self.root.join(dir));
+        if dir.is_empty() || dir == "." {
+            return list_owned(self.root.as_path());
+        }
+        // Reject any traversal attempt on list() too — silent empty
+        // matches the DirectorySource contract for missing entries.
+        let Some(resolved) = self.resolve(dir) else {
+            return Vec::new();
         };
-        list_owned(target)
+        list_owned(&resolved)
     }
 
     fn name(&self) -> &str {
         &self.name
     }
+}
+
+/// Join `path` onto `root`, refusing any input that could escape
+/// the root via `..`, absolute paths, or Windows prefix components.
+///
+/// This is a lexical check — we do not call `canonicalize()` because
+/// the target may not exist yet (e.g. `list_dir` on an empty
+/// subdirectory) and because symlink-following is a caller concern
+/// not this layer's. The lexical check is sufficient to prevent the
+/// `"../../etc/passwd"` class of traversal, which is the documented
+/// threat model for `DirectorySource`.
+fn safe_join(root: &Path, rel: &str) -> Option<PathBuf> {
+    use std::path::Component;
+
+    let rel_path = Path::new(rel);
+    // Absolute paths are always rejected — the caller is a layer
+    // that operates under a fixed root.
+    if rel_path.is_absolute() {
+        return None;
+    }
+
+    let mut out = root.to_path_buf();
+    for component in rel_path.components() {
+        match component {
+            // Normal components extend the path.
+            Component::Normal(part) => out.push(part),
+            // `.` is a no-op.
+            Component::CurDir => {}
+            // `..`, root, or prefix components are all rejected.
+            Component::ParentDir | Component::RootDir | Component::Prefix(_) => return None,
+        }
+    }
+    Some(out)
 }
 
 fn list_owned(dir: &Path) -> Vec<String> {
