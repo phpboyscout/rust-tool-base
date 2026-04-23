@@ -82,8 +82,11 @@ async fn setup_gitea() -> GiteaFixture {
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
 
-    // Create the admin user via `gitea admin user create`.
-    let exec = container
+    // Create the admin user via `gitea admin user create`. Capture
+    // the exit code and streams so a non-zero exit surfaces with
+    // enough detail to diagnose (Gitea sometimes rejects passwords
+    // that look fine, e.g. under `MIN_COMPLEXITY`).
+    let mut exec = container
         .exec(
             testcontainers::core::ExecCommand::new([
                 "gitea",
@@ -103,7 +106,16 @@ async fn setup_gitea() -> GiteaFixture {
         )
         .await
         .expect("exec admin create");
-    drop(exec);
+    let stdout = exec.stdout_to_vec().await.unwrap_or_default();
+    let stderr = exec.stderr_to_vec().await.unwrap_or_default();
+    let code = exec.exit_code().await.unwrap_or(None);
+    assert_eq!(
+        code,
+        Some(0),
+        "gitea admin user create failed: code={code:?} stdout={} stderr={}",
+        String::from_utf8_lossy(&stdout),
+        String::from_utf8_lossy(&stderr),
+    );
 
     // Poll until basic-auth against `GET /api/v1/user` resolves as
     // the admin. Short sleep-then-retry replaces a fixed 500ms wait
