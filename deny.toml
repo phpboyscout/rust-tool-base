@@ -4,16 +4,30 @@
 [advisories]
 db-urls = ["https://github.com/rustsec/advisory-db"]
 yanked = "deny"
-# Advisories waived explicitly — all `unmaintained` (no CVE), all reached
-# via transitive deps of deferred stub crates that will be reworked before
-# their ship milestones.
+# Advisories waived explicitly. Every waiver points at a deferred stub
+# crate that will be reworked before its ship milestone (see
+# `docs/development/specs/rust-tool-base.md` §16 Roadmap). Lift each
+# waiver when the owning crate lands its v0.1.
 ignore = [
-    # `instant` — reached via async-openai → backoff → rtb-ai (v0.3 target).
+    # ── unmaintained (no CVE) ──────────────────────────────────────────
+    # `instant` — reached via async-openai → backoff → rtb-ai (v0.3).
     "RUSTSEC-2024-0384",
+    # `backoff` — reached via async-openai → rtb-ai (v0.3).
+    "RUSTSEC-2025-0012",
+    # `derivative` — reached via jsonschema → fancy-regex → rtb-ai (v0.3).
+    "RUSTSEC-2024-0388",
     # `paste` — reached via ratatui → rtb-docs (v0.2) / rtb-tui (v0.4).
     "RUSTSEC-2024-0436",
     # `number_prefix` — reached via self_update → indicatif → rtb-update (v0.2).
     "RUSTSEC-2025-0119",
+    # ── vulnerability ─────────────────────────────────────────────────
+    # `gix-date < 0.12` — `TimeBuf::as_str` can yield non-utf8 strings.
+    # Reached via gix → rtb-vcs (v0.5 target, currently a 19-line stub
+    # that never constructs a `TimeBuf`). Waived until the gix upgrade
+    # lands with rtb-vcs v0.1; bumping gix to 0.81 today requires
+    # threading `sha1`/`sha256` features through `gix-hash`, which is
+    # scoped with the rtb-vcs rewrite.
+    { id = "RUSTSEC-2025-0140", reason = "gix-date via gix is a stub dependency; rtb-vcs v0.5 will upgrade" },
 ]
 
 [licenses]

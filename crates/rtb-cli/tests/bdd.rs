@@ -25,9 +25,5 @@ use steps::CliWorld;
 async fn bdd() {
     // `with_default_cli` skips cucumber's own CLI parsing so we don't fight
     // libtest/nextest over `std::env::args()` (nextest passes `--exact <name>`).
-    CliWorld::cucumber()
-        .with_default_cli()
-        .fail_on_skipped()
-        .run_and_exit("tests/features")
-        .await;
+    CliWorld::cucumber().with_default_cli().fail_on_skipped().run_and_exit("tests/features").await;
 }

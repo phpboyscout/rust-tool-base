@@ -84,8 +84,12 @@ jobs:
         with: { components: llvm-tools-preview }
       - uses: Swatinem/rust-cache@v2
       - uses: taiki-e/install-action@cargo-llvm-cov
+      - uses: taiki-e/install-action@nextest
       - run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
-      - run: cargo llvm-cov --workspace --all-features --lcov --output-path lcov.info
+      # Use `nextest` so each test runs in its own process. A handful of
+      # `rtb-error` tests install global hook state and would race under
+      # stock `cargo test`'s in-process parallelism.
+      - run: cargo llvm-cov nextest --workspace --all-features --lcov --output-path lcov.info
       - run: cargo llvm-cov report --fail-under-lines 70
       - uses: actions/upload-artifact@v4
         if: always()
