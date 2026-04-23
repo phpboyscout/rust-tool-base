@@ -126,6 +126,7 @@ fn t4_releasesource_config_yaml_roundtrip() {
             repo: "project".into(),
             private: true,
             timeout_seconds: 60,
+            allow_insecure_base_url: false,
         }),
         ReleaseSourceConfig::Bitbucket(BitbucketParams {
             host: "api.bitbucket.org/2.0".into(),
@@ -140,18 +141,21 @@ fn t4_releasesource_config_yaml_roundtrip() {
             repo: "infra".into(),
             private: false,
             timeout_seconds: 30,
+            allow_insecure_base_url: false,
         }),
         ReleaseSourceConfig::Codeberg(CodebergParams {
             owner: "codeberg".into(),
             repo: "pages".into(),
             private: false,
             timeout_seconds: 30,
+            allow_insecure_base_url: false,
         }),
         ReleaseSourceConfig::Direct(DirectParams {
             version_url: "https://releases.example.com/VERSION".into(),
             asset_url_template: "https://releases.example.com/{version}/bin-{target}{ext}".into(),
             pinned_version: None,
             timeout_seconds: 30,
+            allow_insecure_base_url: false,
         }),
     ] {
         let y = serde_yaml::to_string(&original).expect("serialise");
@@ -210,6 +214,7 @@ fn factory_type_alias_matches_documented_signature() {
         asset_url_template: "https://x/{version}".into(),
         pinned_version: None,
         timeout_seconds: 30,
+        allow_insecure_base_url: false,
     });
     let provider = f(&cfg, None).expect("factory succeeds");
     // Use the provider so the compiler confirms trait-object usage.
@@ -237,6 +242,7 @@ fn source_type_discriminators() {
                 repo: "r".into(),
                 private: false,
                 timeout_seconds: 30,
+                allow_insecure_base_url: false,
             }),
             "codeberg",
         ),

@@ -40,6 +40,7 @@ fn given_codeberg_config(world: &mut VcsWorld, owner: String, repo: String) {
         repo,
         private: false,
         timeout_seconds: 30,
+        allow_insecure_base_url: false,
     }));
 }
 

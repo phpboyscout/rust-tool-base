@@ -144,6 +144,7 @@ cucumber = { version = "0.21", features = ["macros"] }
 insta = { version = "1", features = ["yaml", "json"] }
 assert_cmd = "2"
 wiremock = "0.6"
+testcontainers = "0.22"
 predicates = "3"
 mockall = "0.13"
 jsonschema = "0.31"

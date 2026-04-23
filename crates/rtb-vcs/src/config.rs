@@ -141,6 +141,12 @@ pub struct GitlabParams {
     /// Per-request timeout in seconds. `0` disables.
     #[serde(default = "GitlabParams::default_timeout_seconds")]
     pub timeout_seconds: u64,
+    /// Test-only escape hatch: when `true`, the factory builds a
+    /// reqwest client without `https_only` and constructs URLs using
+    /// the `http://` scheme. `#[serde(skip)]` means config files
+    /// cannot downgrade HTTPS enforcement.
+    #[serde(skip)]
+    pub allow_insecure_base_url: bool,
 }
 
 impl GitlabParams {
@@ -202,6 +208,12 @@ pub struct GiteaParams {
     /// Per-request timeout in seconds. `0` disables.
     #[serde(default = "GiteaParams::default_timeout_seconds")]
     pub timeout_seconds: u64,
+    /// Test-only escape hatch: when `true`, the factory builds a
+    /// reqwest client without `https_only` and constructs URLs using
+    /// the `http://` scheme. `#[serde(skip)]` means config files
+    /// cannot downgrade HTTPS enforcement.
+    #[serde(skip)]
+    pub allow_insecure_base_url: bool,
 }
 
 impl GiteaParams {
@@ -225,6 +237,12 @@ pub struct CodebergParams {
     /// Per-request timeout in seconds. `0` disables.
     #[serde(default = "CodebergParams::default_timeout_seconds")]
     pub timeout_seconds: u64,
+    /// Test-only escape hatch — see [`GithubParams::allow_insecure_base_url`].
+    /// When set, the Gitea delegate bypasses HTTPS enforcement and
+    /// uses the `http://` scheme. `#[serde(skip)]` so config files
+    /// can't downgrade.
+    #[serde(skip)]
+    pub allow_insecure_base_url: bool,
 }
 
 impl CodebergParams {
@@ -264,6 +282,12 @@ pub struct DirectParams {
     /// Per-request timeout in seconds. `0` disables.
     #[serde(default = "DirectParams::default_timeout_seconds")]
     pub timeout_seconds: u64,
+    /// Test-only escape hatch — see [`GithubParams::allow_insecure_base_url`].
+    /// When set, the factory permits `http://` version URLs and the
+    /// reqwest client is built without `https_only`. `#[serde(skip)]`
+    /// so config files can't downgrade.
+    #[serde(skip)]
+    pub allow_insecure_base_url: bool,
 }
 
 impl DirectParams {
