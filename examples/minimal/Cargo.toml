@@ -13,6 +13,12 @@ name = "minimal"
 path = "src/main.rs"
 
 [dependencies]
-rtb = { path = "../../crates/rtb", version = "0.1.0", features = ["full"] }
+rtb = { path = "../../crates/rtb", version = "0.1.0" }
 tokio = { workspace = true }
 miette = { workspace = true }
+async-trait = { workspace = true }
+semver = { workspace = true }
+# linkme's `#[distributed_slice]` attribute expands to `::linkme::...`
+# paths, so downstream consumers need it as a direct dep even when
+# accessing the slice via `rtb::core::linkme::...`.
+linkme = { workspace = true }

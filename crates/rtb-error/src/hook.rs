@@ -128,8 +128,7 @@ impl ReportHandler for RtbReportHandler {
             // so `catch_unwind` has a `FnOnce() -> String` of the
             // correct shape (footer is `&Box<dyn Fn() -> String>`).
             #[allow(clippy::redundant_closure)]
-            let outcome =
-                std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| footer()));
+            let outcome = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| footer()));
             IN_RENDER.with(|flag| flag.set(false));
 
             outcome.ok()

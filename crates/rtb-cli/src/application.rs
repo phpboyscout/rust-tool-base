@@ -4,7 +4,7 @@
 use std::ffi::OsString;
 use std::sync::Arc;
 
-use clap::{Command as ClapCommand, CommandFactory};
+use clap::Command as ClapCommand;
 use rtb_assets::Assets;
 use rtb_config::Config;
 use rtb_core::app::App;
@@ -58,7 +58,17 @@ impl Application {
         runtime::bind_shutdown_signals(self.app.shutdown.clone());
 
         let clap_cmd = build_clap_tree(&self.app.metadata, &self.commands);
-        let matches = clap_cmd.try_get_matches_from(args).map_err(|e| map_clap_error(&e))?;
+        let matches = match clap_cmd.try_get_matches_from(args) {
+            Ok(m) => m,
+            Err(e) if is_help_or_version(&e) => {
+                // clap already printed help/version to stdout; exit
+                // successfully rather than bubble a neutral error up
+                // through the diagnostic pipeline.
+                print!("{e}");
+                return Ok(());
+            }
+            Err(e) => return Err(map_clap_error(&e)),
+        };
 
         let Some((sub, _sub_matches)) = matches.subcommand() else {
             // No subcommand — clap's `arg_required_else_help` makes
@@ -200,6 +210,27 @@ impl ApplicationBuilder<HasMetadata, HasVersion> {
                 commands.push(cmd);
             }
         }
+
+        // Deduplicate by command name. `linkme`'s slice order is
+        // link-time-determined and not stable across compiler
+        // versions or dep graph changes, so we cannot rely on
+        // "last-registered wins". Instead, the LAST entry in slice
+        // order for each name wins — which matches the intuition
+        // that a downstream crate's real command overrides the
+        // rtb-cli stub of the same name.
+        let mut seen: std::collections::HashMap<&'static str, usize> =
+            std::collections::HashMap::new();
+        for (idx, cmd) in commands.iter().enumerate() {
+            seen.insert(cmd.spec().name, idx);
+        }
+        let keep: std::collections::HashSet<usize> = seen.values().copied().collect();
+        let mut i = 0usize;
+        commands.retain(|_| {
+            let keep_this = keep.contains(&i);
+            i += 1;
+            keep_this
+        });
+
         // Stable order by command name keeps `--help` output
         // deterministic regardless of link-time slice ordering.
         commands.sort_by(|a, b| a.spec().name.cmp(b.spec().name));
@@ -234,22 +265,18 @@ fn build_clap_tree(metadata: &ToolMetadata, commands: &[Box<dyn RtbCommand>]) ->
     root
 }
 
+/// `true` when the clap error is a "successful" user-facing output
+/// (help or version) that should return `Ok(())` rather than bubble
+/// up through the diagnostic pipeline.
+fn is_help_or_version(err: &clap::Error) -> bool {
+    use clap::error::ErrorKind;
+    matches!(err.kind(), ErrorKind::DisplayHelp | ErrorKind::DisplayVersion)
+}
+
 fn map_clap_error(err: &clap::Error) -> miette::Report {
     use clap::error::ErrorKind;
     match err.kind() {
-        ErrorKind::DisplayHelp | ErrorKind::DisplayVersion => {
-            // clap prints these itself; translate into an Ok-equivalent
-            // Report that the `?` bubble renders as empty.
-            // We can't return Ok here, so surface as a dedicated
-            // "help shown" diagnostic the top-level silences.
-            // For v0.1, just let the user see clap's output and
-            // convert to a neutral error.
-            print!("{err}");
-            miette::miette!(code = "rtb::cli::help_shown", "")
-        }
         ErrorKind::InvalidSubcommand | ErrorKind::UnknownArgument => {
-            // Try to extract the offending name; fall back to the
-            // raw error string.
             let name = err
                 .get(clap::error::ContextKind::InvalidSubcommand)
                 .or_else(|| err.get(clap::error::ContextKind::InvalidArg))
@@ -257,19 +284,5 @@ fn map_clap_error(err: &clap::Error) -> miette::Report {
             rtb_error::Error::CommandNotFound(name).into()
         }
         _ => miette::miette!("{}", err),
-    }
-}
-
-// Used internally by ApplicationBuilder to satisfy a clap trait bound.
-// The `ApplicationBuilder` itself does not implement `CommandFactory`,
-// but clap's `Command` machinery occasionally requires one — we stub a
-// minimal impl on a zero-sized helper to keep the dependency focused.
-struct _NeverConstructed;
-impl CommandFactory for _NeverConstructed {
-    fn command() -> ClapCommand {
-        ClapCommand::new("never")
-    }
-    fn command_for_update() -> ClapCommand {
-        ClapCommand::new("never")
     }
 }

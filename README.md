@@ -81,27 +81,77 @@ rust-tool-base/
 └── SECURITY.md
 ```
 
-## Quick start (aspirational — framework is not functional yet)
+## Quick start
 
-```rust
+A working end-to-end example lives at
+[`examples/minimal`](examples/minimal/src/main.rs). Run it with:
+
+```console
+$ cargo run -p rtb-example-minimal -- version
+$ cargo run -p rtb-example-minimal -- greet
+$ cargo run -p rtb-example-minimal -- doctor
+$ cargo run -p rtb-example-minimal -- --help
+```
+
+### Anatomy
+
+A minimal RTB-based tool has three parts: (1) a custom `Command`
+implementation, (2) a `linkme` registration that inserts it into the
+framework's command slice, and (3) an `Application::builder()` call
+in `main`.
+
+```rust,no_run
+use async_trait::async_trait;
+use linkme::distributed_slice;
+use rtb::core::app::App;
+use rtb::core::command::{BUILTIN_COMMANDS, Command, CommandSpec};
 use rtb::prelude::*;
 
+// 1. Implement the Command trait.
+struct Greet;
+
+#[async_trait]
+impl Command for Greet {
+    fn spec(&self) -> &CommandSpec {
+        static SPEC: CommandSpec = CommandSpec {
+            name: "greet",
+            about: "Print a friendly greeting",
+            aliases: &["hi"],
+            feature: None,
+        };
+        &SPEC
+    }
+
+    async fn run(&self, app: App) -> miette::Result<()> {
+        println!("hello from {}", app.metadata.name);
+        Ok(())
+    }
+}
+
+// 2. Register into the framework's command slice at link time.
+#[distributed_slice(BUILTIN_COMMANDS)]
+fn register_greet() -> Box<dyn Command> { Box::new(Greet) }
+
+// 3. Wire the Application.
 #[tokio::main]
 async fn main() -> miette::Result<()> {
     rtb::cli::Application::builder()
-        .metadata(ToolMetadata::builder()
-            .name("mytool")
-            .summary("My CLI tool")
-            .build())
-        .version(VersionInfo::new(env!("CARGO_PKG_VERSION").parse().unwrap()))
-        .embedded_assets::<MyAssets>()
-        .command::<commands::Deploy>()
-        .command::<commands::Status>()
-        .build()
+        .metadata(
+            ToolMetadata::builder()
+                .name("mytool")
+                .summary("my CLI tool")
+                .build(),
+        )
+        .version(VersionInfo::from_env())
+        .build()?
         .run()
         .await
 }
 ```
+
+Downstream tools need `rtb`, `tokio`, `miette`, `async-trait`, and
+`linkme` as direct dependencies. `linkme` must be direct because its
+`#[distributed_slice]` attribute expands to `::linkme::…` paths.
 
 ## Development
 

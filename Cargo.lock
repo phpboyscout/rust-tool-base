@@ -4487,8 +4487,11 @@ dependencies = [
 name = "rtb-example-minimal"
 version = "0.1.0"
 dependencies = [
+ "async-trait",
+ "linkme",
  "miette",
  "rtb",
+ "semver",
  "tokio",
 ]
 

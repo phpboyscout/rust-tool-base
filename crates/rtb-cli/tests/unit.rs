@@ -219,3 +219,51 @@ fn health_status_constructors() {
     assert!(!HealthStatus::warn("x").is_fail());
     assert!(HealthStatus::fail("x").is_fail());
 }
+
+// ---------------------------------------------------------------------
+// T13 — BUILTIN_COMMANDS dedup: registering a second command with an
+// existing name must not cause clap to see duplicate subcommands
+// ---------------------------------------------------------------------
+
+struct DupUpdateOverride;
+
+#[async_trait]
+impl rtb_core::command::Command for DupUpdateOverride {
+    fn spec(&self) -> &rtb_core::command::CommandSpec {
+        static SPEC: rtb_core::command::CommandSpec = rtb_core::command::CommandSpec {
+            name: "update", // Deliberate collision with rtb-cli's built-in stub.
+            about: "dup-update-override",
+            aliases: &[],
+            feature: Some(Feature::Update),
+        };
+        &SPEC
+    }
+    async fn run(&self, _app: App) -> miette::Result<()> {
+        Ok(())
+    }
+}
+
+#[distributed_slice(rtb_core::command::BUILTIN_COMMANDS)]
+fn __register_dup_update() -> Box<dyn rtb_core::command::Command> {
+    Box::new(DupUpdateOverride)
+}
+
+#[tokio::test]
+async fn t13_duplicate_command_name_is_deduped() {
+    // Two entries with name "update" are now in BUILTIN_COMMANDS
+    // (the rtb-cli stub + DupUpdateOverride above). Application::build
+    // must dedupe; otherwise clap would reject the duplicate subcommand
+    // at parse time.
+    let app = Application::builder()
+        .metadata(sample_metadata())
+        .version(sample_version())
+        .install_hooks(false)
+        .build()
+        .expect("build must succeed despite duplicate command name");
+
+    // Dispatching `update` must succeed or fail cleanly — crucially,
+    // not panic due to a malformed clap tree. The concrete which-wins
+    // semantic is documented as "last in linkme slice order"; we don't
+    // assert specific behaviour here, only that dedup happened.
+    let _ = app.run_with_args(["mytool", "update"]).await;
+}
