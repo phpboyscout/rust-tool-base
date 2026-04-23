@@ -8,7 +8,7 @@
 //! # Online-only by design
 //!
 //! The trait is generic over the stream source. Hosted providers
-//! (Claude, OpenAI, Gemini) or self-hosted HTTP endpoints both fit.
+//! (Claude, `OpenAI`, Gemini) or self-hosted HTTP endpoints both fit.
 //! Embedding model weights in a CLI binary is explicitly out of scope
 //! — see `docs/development/specs/2026-04-23-rtb-docs-v0.1.md` § 2.6.
 

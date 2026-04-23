@@ -105,10 +105,19 @@ pub fn parse_index(yaml: &str) -> Result<Index> {
 }
 
 fn is_unsafe_path(path: &str) -> bool {
+    // `Path::is_absolute()` is platform-aware — on Windows a leading `/`
+    // without a drive letter is classified as relative, so we also reject
+    // a leading `RootDir` component explicitly.
     let p = std::path::Path::new(path);
     p.is_absolute()
-        || p.components()
-            .any(|c| matches!(c, std::path::Component::ParentDir | std::path::Component::Prefix(_)))
+        || p.components().any(|c| {
+            matches!(
+                c,
+                std::path::Component::ParentDir
+                    | std::path::Component::Prefix(_)
+                    | std::path::Component::RootDir
+            )
+        })
 }
 
 /// Synthesise an index from a list of `(relative_path, body)` pairs.
