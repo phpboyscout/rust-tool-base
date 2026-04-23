@@ -86,25 +86,19 @@ async fn setup_gitea() -> GiteaFixture {
         tokio::time::sleep(Duration::from_millis(500)).await;
     }
 
-    // Create the admin user via `gitea admin user create`. Capture
-    // the exit code and streams so a non-zero exit surfaces with
-    // enough detail to diagnose (Gitea sometimes rejects passwords
-    // that look fine, e.g. under `MIN_COMPLEXITY`).
+    // Create the admin user via `gitea admin user create`. Gitea
+    // refuses to run as root (the default user a `docker exec`
+    // lands on), so switch to the `git` user the entrypoint
+    // provisions via `USER_UID`/`USER_GID`. Constants below are
+    // compile-time fixed so shell-quoting is not a concern.
+    let admin_cmd = format!(
+        "gitea admin user create --username {ADMIN_USER} --password {ADMIN_PASS} \
+         --email {ADMIN_EMAIL} --admin --must-change-password=false"
+    );
     let mut exec = container
         .exec(
             testcontainers::core::ExecCommand::new([
-                "gitea",
-                "admin",
-                "user",
-                "create",
-                "--username",
-                ADMIN_USER,
-                "--password",
-                ADMIN_PASS,
-                "--email",
-                ADMIN_EMAIL,
-                "--admin",
-                "--must-change-password=false",
+                "su", "-s", "/bin/sh", "git", "-c", &admin_cmd,
             ])
             .with_container_ready_conditions(vec![]),
         )
