@@ -132,8 +132,10 @@ fn t4_releasesource_config_yaml_roundtrip() {
             host: "api.bitbucket.org/2.0".into(),
             workspace: "ws".into(),
             repo_slug: "slug".into(),
+            username: None,
             private: false,
             timeout_seconds: 30,
+            allow_insecure_base_url: false,
         }),
         ReleaseSourceConfig::Gitea(GiteaParams {
             host: "gitea.example.com".into(),

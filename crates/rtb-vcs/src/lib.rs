@@ -48,6 +48,8 @@ pub mod release;
 #[cfg(feature = "_http")]
 pub(crate) mod http;
 
+#[cfg(feature = "bitbucket")]
+pub mod bitbucket;
 #[cfg(feature = "codeberg")]
 pub mod codeberg;
 #[cfg(feature = "direct")]
