@@ -1,6 +1,6 @@
 [package]
-name = "rtb-core"
-description = "Rust Tool Base — core application context, service traits, and tool metadata."
+name = "rtb-app"
+description = "Rust Tool Base — application context, tool metadata, runtime features, and the Command plugin trait."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -17,9 +17,9 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-rtb-error = { path = "../rtb-error", version = "0.1.0" }
-rtb-config = { path = "../rtb-config", version = "0.1.0" }
-rtb-assets = { path = "../rtb-assets", version = "0.1.0" }
+rtb-error = { path = "../rtb-error", version = "0.1.1" }
+rtb-config = { path = "../rtb-config", version = "0.1.1" }
+rtb-assets = { path = "../rtb-assets", version = "0.1.1" }
 tokio-util = { workspace = true }
 async-trait = { workspace = true }
 serde = { workspace = true }

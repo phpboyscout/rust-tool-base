@@ -30,7 +30,7 @@
 //!
 //! # What v0.1 ships
 //!
-//! * Typed [`Config<C>`] with `C` defaulting to `()` so rtb-core's
+//! * Typed [`Config<C>`] with `C` defaulting to `()` so rtb-app's
 //!   `Arc<Config>` field keeps working without a type parameter.
 //! * [`ConfigBuilder`] layering (embedded default → user file → env).
 //! * Explicit [`Config::reload`] re-reading every source and atomically

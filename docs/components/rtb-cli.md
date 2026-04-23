@@ -17,7 +17,7 @@ touches. It wires:
   typestate assembler for `ToolMetadata` + `VersionInfo` (both
   required at compile time).
 - [`clap`](https://crates.io/crates/clap) — materialises
-  `rtb_core::BUILTIN_COMMANDS` into a subcommand tree, filtered by
+  `rtb_app::BUILTIN_COMMANDS` into a subcommand tree, filtered by
   runtime `Features`, deduplicated by name.
 - `tracing_subscriber` — pretty fmt on TTY stderr, JSON otherwise.
 - The [`rtb_error`](rtb-error.md) hook pipeline — report handler,
@@ -59,7 +59,7 @@ binary crate.
   required fields (`metadata`, `version`). Hand-rolled phantom
   markers (`NoMetadata`/`HasMetadata`, `NoVersion`/`HasVersion`)
   are clearer than fighting a macro.
-- **clap only lives here.** `rtb-core` stays clap-free so downstream
+- **clap only lives here.** `rtb-app` stays clap-free so downstream
   tools that replace clap (argh, bpaf, …) can do so by substituting
   their own `rtb-cli` equivalent.
 - **`run_with_args` for tests.** Production code calls `run()` which
@@ -162,7 +162,7 @@ The `init` subcommand iterates, skipping already-configured entries.
 
 ## Built-in commands
 
-Every built-in registers into `rtb_core::BUILTIN_COMMANDS` via
+Every built-in registers into `rtb_app::BUILTIN_COMMANDS` via
 `#[distributed_slice]`. `Application::build` filters them by the
 runtime `Features` set.
 
@@ -185,7 +185,7 @@ that a real `update` command from the v0.2 `rtb-update` crate
 overrides `rtb-cli`'s stub of the same name:
 
 ```rust
-use rtb_core::command::{BUILTIN_COMMANDS, Command, CommandSpec};
+use rtb_app::command::{BUILTIN_COMMANDS, Command, CommandSpec};
 use linkme::distributed_slice;
 
 pub struct MyUpdate;
@@ -197,7 +197,7 @@ impl Command for MyUpdate {
             name: "update",   // collides with rtb-cli stub; dedup picks the later entry
             about: "Run the real update flow",
             aliases: &[],
-            feature: Some(rtb_core::features::Feature::Update),
+            feature: Some(rtb_app::features::Feature::Update),
         };
         &SPEC
     }
@@ -255,6 +255,6 @@ crate is the shipped reference.
 
 ## Related
 
-- [rtb-core](rtb-core.md) — `App`, `Command`, `BUILTIN_COMMANDS`.
+- [rtb-app](rtb-app.md) — `App`, `Command`, `BUILTIN_COMMANDS`.
 - [rtb-error](rtb-error.md) — diagnostic pipeline that `run_with_args` installs.
 - [rtb-test-support](rtb-test-support.md) — test-side `App` construction.

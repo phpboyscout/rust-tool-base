@@ -52,7 +52,7 @@ rust-tool-base/
 ├── Cargo.toml                      # workspace root
 ├── crates/
 │   ├── rtb/                        # umbrella crate (public API)
-│   ├── rtb-core/                   # App context, ToolMetadata, Features
+│   ├── rtb-app/                   # App context, ToolMetadata, Features
 │   ├── rtb-error/                  # Error type + miette integration
 │   ├── rtb-config/                 # figment-backed typed config
 │   ├── rtb-assets/                 # rust-embed + vfs overlay

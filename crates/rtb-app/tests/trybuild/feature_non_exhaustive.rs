@@ -1,7 +1,7 @@
 //! T17 fixture — `Feature` is `#[non_exhaustive]`, so an exhaustive
 //! match without a wildcard must be rejected across crate boundaries.
 
-use rtb_core::features::Feature;
+use rtb_app::features::Feature;
 
 fn classify(f: Feature) -> &'static str {
     match f {

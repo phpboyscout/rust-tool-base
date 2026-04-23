@@ -4371,13 +4371,13 @@ dependencies = [
 
 [[package]]
 name = "rtb"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "rtb-ai",
+ "rtb-app",
  "rtb-assets",
  "rtb-cli",
  "rtb-config",
- "rtb-core",
  "rtb-credentials",
  "rtb-docs",
  "rtb-error",
@@ -4390,7 +4390,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-ai"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-openai",
  "async-trait",
@@ -4398,7 +4398,7 @@ dependencies = [
  "jsonschema",
  "miette",
  "reqwest 0.12.28",
- "rtb-core",
+ "rtb-app",
  "rtb-error",
  "schemars 0.8.22",
  "secrecy",
@@ -4410,81 +4410,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "rtb-assets"
-version = "0.1.0"
-dependencies = [
- "cucumber",
- "insta",
- "json-patch",
- "miette",
- "rust-embed",
- "serde",
- "serde_json",
- "serde_yaml",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "rtb-cli"
-version = "0.1.0"
-dependencies = [
- "async-trait",
- "clap",
- "cucumber",
- "insta",
- "linkme",
- "miette",
- "rtb-assets",
- "rtb-config",
- "rtb-core",
- "rtb-error",
- "semver",
- "serde_json",
- "serde_yaml",
- "tokio",
- "tokio-util",
- "tracing",
- "tracing-subscriber",
- "trybuild",
-]
-
-[[package]]
-name = "rtb-cli-bin"
-version = "0.1.0"
-dependencies = [
- "clap",
- "inquire",
- "miette",
- "minijinja",
- "rtb-core",
- "rtb-error",
- "serde",
- "serde_yaml",
- "tokio",
- "tracing",
- "tracing-subscriber",
-]
-
-[[package]]
-name = "rtb-config"
-version = "0.1.0"
-dependencies = [
- "arc-swap",
- "cucumber",
- "figment",
- "insta",
- "miette",
- "serde",
- "tempfile",
- "thiserror 2.0.18",
- "tokio",
-]
-
-[[package]]
-name = "rtb-core"
-version = "0.1.0"
+name = "rtb-app"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "bon",
@@ -4505,8 +4432,81 @@ dependencies = [
 ]
 
 [[package]]
+name = "rtb-assets"
+version = "0.1.1"
+dependencies = [
+ "cucumber",
+ "insta",
+ "json-patch",
+ "miette",
+ "rust-embed",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
+name = "rtb-cli"
+version = "0.1.1"
+dependencies = [
+ "async-trait",
+ "clap",
+ "cucumber",
+ "insta",
+ "linkme",
+ "miette",
+ "rtb-app",
+ "rtb-assets",
+ "rtb-config",
+ "rtb-error",
+ "semver",
+ "serde_json",
+ "serde_yaml",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber",
+ "trybuild",
+]
+
+[[package]]
+name = "rtb-cli-bin"
+version = "0.1.1"
+dependencies = [
+ "clap",
+ "inquire",
+ "miette",
+ "minijinja",
+ "rtb-app",
+ "rtb-error",
+ "serde",
+ "serde_yaml",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+]
+
+[[package]]
+name = "rtb-config"
+version = "0.1.1"
+dependencies = [
+ "arc-swap",
+ "cucumber",
+ "figment",
+ "insta",
+ "miette",
+ "serde",
+ "tempfile",
+ "thiserror 2.0.18",
+ "tokio",
+]
+
+[[package]]
 name = "rtb-credentials"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "cucumber",
@@ -4523,13 +4523,13 @@ dependencies = [
 
 [[package]]
 name = "rtb-docs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "crossterm 0.28.1",
  "miette",
  "ratatui",
+ "rtb-app",
  "rtb-assets",
- "rtb-core",
  "rtb-error",
  "termimad",
  "thiserror 2.0.18",
@@ -4539,7 +4539,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-error"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "cucumber",
  "insta",
@@ -4551,7 +4551,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-example-minimal"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "assert_cmd",
  "async-trait",
@@ -4565,11 +4565,11 @@ dependencies = [
 
 [[package]]
 name = "rtb-mcp"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "miette",
  "rmcp",
- "rtb-core",
+ "rtb-app",
  "rtb-error",
  "schemars 0.8.22",
  "serde",
@@ -4581,7 +4581,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-telemetry"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "cucumber",
@@ -4600,18 +4600,18 @@ dependencies = [
 
 [[package]]
 name = "rtb-test-support"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
+ "rtb-app",
  "rtb-assets",
  "rtb-config",
- "rtb-core",
  "semver",
  "tokio-util",
 ]
 
 [[package]]
 name = "rtb-tui"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "console 0.15.11",
  "crossterm 0.28.1",
@@ -4624,12 +4624,12 @@ dependencies = [
 
 [[package]]
 name = "rtb-update"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "ed25519-dalek",
  "miette",
  "reqwest 0.12.28",
- "rtb-core",
+ "rtb-app",
  "rtb-error",
  "rtb-vcs",
  "self-replace",
@@ -4643,7 +4643,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-vcs"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "async-trait",
  "gitlab",
@@ -4651,7 +4651,7 @@ dependencies = [
  "miette",
  "octocrab",
  "reqwest 0.12.28",
- "rtb-core",
+ "rtb-app",
  "rtb-error",
  "secrecy",
  "thiserror 2.0.18",

@@ -7,13 +7,13 @@
 #![allow(clippy::missing_const_for_fn, clippy::needless_pass_by_value)]
 
 use async_trait::async_trait;
+use rtb_app::app::App;
+use rtb_app::features::{Feature, Features};
+use rtb_app::metadata::ToolMetadata;
+use rtb_app::version::VersionInfo;
 use rtb_cli::health::{HealthCheck, HealthStatus, HEALTH_CHECKS};
 use rtb_cli::init::{Initialiser, INITIALISERS};
 use rtb_cli::Application;
-use rtb_core::app::App;
-use rtb_core::features::{Feature, Features};
-use rtb_core::metadata::ToolMetadata;
-use rtb_core::version::VersionInfo;
 use semver::Version;
 
 fn sample_metadata() -> ToolMetadata {
@@ -139,7 +139,7 @@ impl HealthCheck for FailingCheck {
     }
 }
 
-use rtb_core::linkme::distributed_slice;
+use rtb_app::linkme::distributed_slice;
 
 #[distributed_slice(HEALTH_CHECKS)]
 fn __register_failing_check() -> Box<dyn HealthCheck> {
@@ -228,9 +228,9 @@ fn health_status_constructors() {
 struct DupUpdateOverride;
 
 #[async_trait]
-impl rtb_core::command::Command for DupUpdateOverride {
-    fn spec(&self) -> &rtb_core::command::CommandSpec {
-        static SPEC: rtb_core::command::CommandSpec = rtb_core::command::CommandSpec {
+impl rtb_app::command::Command for DupUpdateOverride {
+    fn spec(&self) -> &rtb_app::command::CommandSpec {
+        static SPEC: rtb_app::command::CommandSpec = rtb_app::command::CommandSpec {
             name: "update", // Deliberate collision with rtb-cli's built-in stub.
             about: "dup-update-override",
             aliases: &[],
@@ -243,8 +243,8 @@ impl rtb_core::command::Command for DupUpdateOverride {
     }
 }
 
-#[distributed_slice(rtb_core::command::BUILTIN_COMMANDS)]
-fn __register_dup_update() -> Box<dyn rtb_core::command::Command> {
+#[distributed_slice(rtb_app::command::BUILTIN_COMMANDS)]
+fn __register_dup_update() -> Box<dyn rtb_app::command::Command> {
     Box::new(DupUpdateOverride)
 }
 

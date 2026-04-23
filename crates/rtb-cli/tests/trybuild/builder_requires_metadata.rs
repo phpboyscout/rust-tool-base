@@ -3,7 +3,7 @@
 //! `ApplicationBuilder<HasMetadata, HasVersion>`.
 
 use rtb_cli::Application;
-use rtb_core::version::VersionInfo;
+use rtb_app::version::VersionInfo;
 use semver::Version;
 
 fn main() {

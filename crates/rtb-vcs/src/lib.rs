@@ -1,7 +1,7 @@
 //! Git, GitHub, and GitLab abstractions.
 //!
 //! * `ReleaseProvider` — async trait behind `Arc<dyn ReleaseProvider>`,
-//!   selected at runtime by [`rtb_core::metadata::ReleaseSource`]. Built-in
+//!   selected at runtime by [`rtb_app::metadata::ReleaseSource`]. Built-in
 //!   impls for GitHub, GitLab, and a "direct URL" HTTP provider.
 //! * `Repo` — pure-Rust Git via `gix`, with a blocking-on-tokio adapter
 //!   (`spawn_blocking`) for async call sites.

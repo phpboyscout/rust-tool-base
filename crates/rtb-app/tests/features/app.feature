@@ -1,4 +1,4 @@
-Feature: rtb-core — application context, metadata, features, commands
+Feature: rtb-app — application context, metadata, features, commands
   As a downstream rtb-* crate or a tool author
   I want a strongly-typed App context, tool metadata, feature gating, and a command registry
   So that my CLI tool is cheap to wire up and hard to misuse
@@ -30,9 +30,9 @@ Feature: rtb-core — application context, metadata, features, commands
     Then the footer reads "support: slack #cli-tools (in platform)"
 
   Scenario: S5 — registering a command makes it observable in BUILTIN_COMMANDS
-    Given the process has registered a command named "rtb-core-test-cmd"
+    Given the process has registered a command named "rtb-app-test-cmd"
     When I iterate BUILTIN_COMMANDS
-    Then the list contains "rtb-core-test-cmd"
+    Then the list contains "rtb-app-test-cmd"
 
   Scenario Outline: S6 — is_development is true for pre-1.0 or pre-release builds
     Given a version "<version>"

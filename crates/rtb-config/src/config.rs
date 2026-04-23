@@ -15,7 +15,7 @@ use crate::error::ConfigError;
 ///
 /// `C` is the caller's `serde::Deserialize` struct describing the
 /// configuration shape. It defaults to `()` so downstream code that
-/// holds an `Arc<Config>` (notably `rtb_core::app::App`) does not
+/// holds an `Arc<Config>` (notably `rtb_app::app::App`) does not
 /// need to carry the type parameter explicitly.
 ///
 /// See [`ConfigBuilder`] for the layered construction API and

@@ -5,7 +5,7 @@
 //! replaces Go Tool Base's dynamic `Props` container. Services are held in
 //! `Arc<T>` and `App` is cheap to clone — command handlers take it by value.
 //!
-//! See `docs/development/specs/2026-04-22-rtb-core-v0.1.md` for the
+//! See `docs/development/specs/2026-04-22-rtb-app-v0.1.md` for the
 //! authoritative contract.
 
 #![forbid(unsafe_code)]
@@ -17,7 +17,7 @@ pub mod metadata;
 pub mod version;
 
 /// Re-exported so downstream `#[distributed_slice]` users can use
-/// `rtb_core::linkme::distributed_slice` without adding `linkme` to
+/// `rtb_app::linkme::distributed_slice` without adding `linkme` to
 /// their own `Cargo.toml` directly.
 pub use linkme;
 

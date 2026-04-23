@@ -1,17 +1,17 @@
-//! Unit-level acceptance tests for `rtb-core`.
+//! Unit-level acceptance tests for `rtb-app`.
 //!
 //! Each test maps to a T# criterion in
-//! `docs/development/specs/2026-04-22-rtb-core-v0.1.md`.
+//! `docs/development/specs/2026-04-22-rtb-app-v0.1.md`.
 
 #![allow(missing_docs)]
 
 use std::sync::Arc;
 
-use rtb_core::app::App;
-use rtb_core::command::{Command, CommandSpec, BUILTIN_COMMANDS};
-use rtb_core::features::{Feature, Features, FeaturesBuilder};
-use rtb_core::metadata::{HelpChannel, ReleaseSource, ToolMetadata};
-use rtb_core::version::VersionInfo;
+use rtb_app::app::App;
+use rtb_app::command::{Command, CommandSpec, BUILTIN_COMMANDS};
+use rtb_app::features::{Feature, Features, FeaturesBuilder};
+use rtb_app::metadata::{HelpChannel, ReleaseSource, ToolMetadata};
+use rtb_app::version::VersionInfo;
 use semver::Version;
 
 // ---------------------------------------------------------------------
@@ -249,7 +249,7 @@ fn t13_builder_disable_preserves_others() {
 // T14 — BUILTIN_COMMANDS registration from this test binary
 // ---------------------------------------------------------------------
 
-use rtb_core::linkme::distributed_slice;
+use rtb_app::linkme::distributed_slice;
 
 struct TestCmd;
 
@@ -257,8 +257,8 @@ struct TestCmd;
 impl Command for TestCmd {
     fn spec(&self) -> &CommandSpec {
         static SPEC: CommandSpec = CommandSpec {
-            name: "rtb-core-test-cmd",
-            about: "registered from rtb-core's unit test binary",
+            name: "rtb-app-test-cmd",
+            about: "registered from rtb-app's unit test binary",
             aliases: &[],
             feature: None,
         };
@@ -279,7 +279,7 @@ fn __register_test_cmd() -> Box<dyn Command> {
 fn t14_distributed_slice_observable() {
     let names: Vec<&'static str> = BUILTIN_COMMANDS.iter().map(|f| f().spec().name).collect();
     assert!(
-        names.contains(&"rtb-core-test-cmd"),
+        names.contains(&"rtb-app-test-cmd"),
         "registered test command not found in BUILTIN_COMMANDS; got: {names:?}",
     );
 }

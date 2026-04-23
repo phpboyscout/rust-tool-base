@@ -5,13 +5,13 @@ use std::ffi::OsString;
 use std::sync::Arc;
 
 use clap::Command as ClapCommand;
+use rtb_app::app::App;
+use rtb_app::command::{Command as RtbCommand, BUILTIN_COMMANDS};
+use rtb_app::features::Features;
+use rtb_app::metadata::ToolMetadata;
+use rtb_app::version::VersionInfo;
 use rtb_assets::Assets;
 use rtb_config::Config;
-use rtb_core::app::App;
-use rtb_core::command::{Command as RtbCommand, BUILTIN_COMMANDS};
-use rtb_core::features::Features;
-use rtb_core::metadata::ToolMetadata;
-use rtb_core::version::VersionInfo;
 use tokio_util::sync::CancellationToken;
 
 use crate::runtime::{self, LogFormat};

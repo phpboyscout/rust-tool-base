@@ -2,7 +2,7 @@
 //! `summary`. Omitting either must be a compile error (enforced by
 //! `bon::Builder` typestate).
 
-use rtb_core::metadata::ToolMetadata;
+use rtb_app::metadata::ToolMetadata;
 
 fn main() {
     // Missing name — should fail to compile.
