@@ -8,8 +8,8 @@
 //! # Registration pattern
 //!
 //! ```ignore
-//! use rtb_core::command::{BUILTIN_COMMANDS, Command, CommandSpec};
-//! use rtb_core::linkme::distributed_slice;
+//! use rtb_app::command::{BUILTIN_COMMANDS, Command, CommandSpec};
+//! use rtb_app::linkme::distributed_slice;
 //!
 //! pub struct Deploy;
 //!
@@ -25,7 +25,7 @@
 //!         &SPEC
 //!     }
 //!
-//!     async fn run(&self, _app: rtb_core::app::App) -> miette::Result<()> {
+//!     async fn run(&self, _app: rtb_app::app::App) -> miette::Result<()> {
 //!         Ok(())
 //!     }
 //! }

@@ -200,7 +200,7 @@ async fn main() -> miette::Result<()> {
 
 | Crate | Uses |
 |---|---|
-| [rtb-core](rtb-core.md) | `Error` for `FeatureDisabled` / `CommandNotFound` variants. |
+| [rtb-app](rtb-app.md) | `Error` for `FeatureDisabled` / `CommandNotFound` variants. |
 | [rtb-config](rtb-config.md) | Converts `ConfigError::Parse` into `Error::Other`. |
 | [rtb-cli](rtb-cli.md) | `Application::run` installs all three hooks + wires the `ToolMetadata::help` footer. |
 | [rtb-credentials](rtb-credentials.md) | `CredentialError` is Boxed into `Error::Other` at the app boundary. |

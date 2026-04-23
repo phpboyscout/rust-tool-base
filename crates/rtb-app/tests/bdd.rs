@@ -1,4 +1,4 @@
-//! Cucumber BDD runner for `rtb-core`.
+//! Cucumber BDD runner for `rtb-app`.
 
 #![allow(missing_docs)]
 // Cucumber step macros dictate signatures that fight with pedantic lints.
@@ -19,11 +19,11 @@ mod steps;
 
 use cucumber::World;
 
-use steps::CoreWorld;
+use steps::AppWorld;
 
 #[tokio::test(flavor = "multi_thread")]
 async fn bdd() {
     // `with_default_cli` skips cucumber's own CLI parsing so we don't fight
     // libtest/nextest over `std::env::args()` (nextest passes `--exact <name>`).
-    CoreWorld::cucumber().with_default_cli().fail_on_skipped().run_and_exit("tests/features").await;
+    AppWorld::cucumber().with_default_cli().fail_on_skipped().run_and_exit("tests/features").await;
 }

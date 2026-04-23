@@ -17,9 +17,9 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-rtb-core = { path = "../rtb-core", version = "0.1.0" }
-rtb-error = { path = "../rtb-error", version = "0.1.0" }
-rtb-vcs = { path = "../rtb-vcs", version = "0.1.0" }
+rtb-app = { path = "../rtb-app", version = "0.1.1" }
+rtb-error = { path = "../rtb-error", version = "0.1.1" }
+rtb-vcs = { path = "../rtb-vcs", version = "0.1.1" }
 self_update = { workspace = true }
 self-replace = { workspace = true }
 semver = { workspace = true }

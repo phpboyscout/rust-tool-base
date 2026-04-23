@@ -59,7 +59,7 @@ telemetry) wired by default.
   services (config, assets, logging, shutdown token, tool metadata).
 - **Command** — a type implementing `rtb_cli::Command` that is registered
   with an `Application`.
-- **Feature** — a runtime switch (`rtb_core::Feature`) for built-in
+- **Feature** — a runtime switch (`rtb_app::Feature`) for built-in
   commands and subsystems. Orthogonal to Cargo features.
 - **Cargo feature** — a compile-time on/off for a slice of RTB, exposed by
   the `rtb` umbrella crate (`cli`, `update`, `docs`, `mcp`, `ai`,
@@ -81,10 +81,10 @@ supports at the time of a release; documented in each crate's
 | Crate | Role | Hard deps (public API) |
 | --- | --- | --- |
 | `rtb-error` | `Error` enum, `Result`, `miette` glue | `miette`, `thiserror` |
-| `rtb-core` | `App`, `ToolMetadata`, `VersionInfo`, `Features`, registration slices | `rtb-error`, `rtb-config`, `rtb-assets` |
+| `rtb-app` | `App`, `ToolMetadata`, `VersionInfo`, `Features`, registration slices | `rtb-error`, `rtb-config`, `rtb-assets` |
 | `rtb-config` | Layered typed config; hot-reload | `figment`, `notify`, `arc-swap`, `serde` |
 | `rtb-assets` | `rust-embed` + `vfs` overlay | `rust-embed`, `vfs`, format deps |
-| `rtb-cli` | `Application` builder, clap integration, built-in commands | `clap`, `tracing`, `tokio`, `miette`, rtb-core |
+| `rtb-cli` | `Application` builder, clap integration, built-in commands | `clap`, `tracing`, `tokio`, `miette`, rtb-app |
 | `rtb-update` | Self-update (archive + signature + atomic swap) | `self_update`, `self-replace`, `ed25519-dalek`, `sha2` |
 | `rtb-vcs` | Git + GitHub + GitLab abstractions | `gix`, `octocrab`, `gitlab`, `secrecy` |
 | `rtb-ai` | Multi-provider AI client; structured output | `genai`, `async-openai`, `schemars`, `jsonschema` |
@@ -134,7 +134,7 @@ rust-tool-base/
 
 ---
 
-## 3. Core application context (`rtb-core`)
+## 3. Core application context (`rtb-app`)
 
 ### 3.1 `App` struct
 
@@ -178,7 +178,7 @@ pub struct App<C: AppConfig = ()> {
 
 ### 3.3 `ToolMetadata`
 
-Built with `bon::Builder`. See `crates/rtb-core/src/metadata.rs`. All fields
+Built with `bon::Builder`. See `crates/rtb-app/src/metadata.rs`. All fields
 except `name` and `summary` are optional. `release_source` is required iff
 `Feature::Update` is enabled at runtime (checked in `Application::build`).
 
@@ -672,9 +672,9 @@ return Err(miette::miette!(
 Minimum shippable scope:
 
 1. ✅ Workspace compiles clean (`just ci`).
-2. ✅ `rtb-core` exposes `App`, `ToolMetadata`, `Features`,
+2. ✅ `rtb-app` exposes `App`, `ToolMetadata`, `Features`,
    `Command` trait, `BUILTIN_COMMANDS`. (`Application::builder`
-   lives in `rtb-cli` rather than `rtb-core`.)
+   lives in `rtb-cli` rather than `rtb-app`.)
 3. ✅ `rtb-config` supports env + user file + embedded default
    layering, typed via `serde::Deserialize`. Explicit `reload()`
    ships; reactive `subscribe()` + notify-driven auto-reload
@@ -700,7 +700,7 @@ Minimum shippable scope:
 
 ### Shipped
 
-- **0.1.0** (2026-04-22) — `rtb-error`, `rtb-core`, `rtb-config`,
+- **0.1.0** (2026-04-22) — `rtb-error`, `rtb-app`, `rtb-config`,
   `rtb-assets`, `rtb-cli`, `rtb-credentials`, `rtb-telemetry`.
   151 acceptance criteria green. See `CHANGELOG.md` and
   `docs/development/specs/2026-04-22-*.md` for per-crate detail.

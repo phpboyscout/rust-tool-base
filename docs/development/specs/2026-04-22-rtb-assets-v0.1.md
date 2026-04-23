@@ -14,7 +14,7 @@ commit; 13 unit + 6 BDD acceptance criteria went green on first run
 modulo two cosmetic fix-ups (byte-literal, regex-escape) landed in the
 same commit.
 **Target crate:** `rtb-assets`
-**Feeds:** `rtb-core` (App.assets), `rtb-docs` (markdown browser),
+**Feeds:** `rtb-app` (App.assets), `rtb-docs` (markdown browser),
 `rtb-cli` (init-time asset merging), downstream tools.
 **Parent contract:** [§5 of the framework spec](rust-tool-base.md#5-assets--overlay-fs-rtb-assets).
 
@@ -145,7 +145,7 @@ impl Assets {
 
 **Empty Assets** — `Assets::builder().build()` yields a zero-layer
 Assets. Every method returns "not found" / empty. This is what
-`Assets::default()` returns. rtb-core's `App::for_testing` uses this.
+`Assets::default()` returns. rtb-app's `App::for_testing` uses this.
 
 ### 3.4 `AssetsBuilder`
 
@@ -267,7 +267,7 @@ Feature file: `crates/rtb-assets/tests/features/assets.feature`.
 ## 7. Rollout plan
 
 1. Land the spec + tests + implementation in one `feat(assets)` commit.
-2. rtb-core's `App::for_testing` uses `Assets::default()` — no change
+2. rtb-app's `App::for_testing` uses `Assets::default()` — no change
    needed; `Assets::default()` already returns the empty overlay.
 
 ## 8. Open questions

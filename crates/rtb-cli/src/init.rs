@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use linkme::distributed_slice;
-use rtb_core::app::App;
+use rtb_app::app::App;
 
 /// A pluggable bootstrap step run by the `init` subcommand.
 ///
@@ -28,7 +28,7 @@ pub trait Initialiser: Send + Sync + 'static {
 ///
 /// ```ignore
 /// use rtb_cli::init::{Initialiser, INITIALISERS};
-/// use rtb_core::linkme::distributed_slice;
+/// use rtb_app::linkme::distributed_slice;
 ///
 /// #[distributed_slice(INITIALISERS)]
 /// fn register() -> Box<dyn Initialiser> { Box::new(MyInitialiser) }

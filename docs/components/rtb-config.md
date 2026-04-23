@@ -38,7 +38,7 @@ reload** flow. Hot reload via `notify` and a reactive
   without tearing. Readers that held a pre-reload snapshot keep
   their view until they ask for a new one.
 - **`Config<C = ()>` default generic.** Downstream code that
-  holds an `Arc<Config>` (notably `rtb-core`'s `App.config`)
+  holds an `Arc<Config>` (notably `rtb-app`'s `App.config`)
   resolves to `Arc<Config<()>>` without an explicit type parameter.
   Typed-config-needing callers use `Config<MyConfig>`.
 - **No dynamic `Sub()` / `GetString()` accessors.** Access is
@@ -202,7 +202,7 @@ assert_eq!(cfg.get().port, 9999);
 
 | Crate | Uses |
 |---|---|
-| [rtb-core](rtb-core.md) | `App.config` holds `Arc<Config<()>>`. |
+| [rtb-app](rtb-app.md) | `App.config` holds `Arc<Config<()>>`. |
 | [rtb-cli](rtb-cli.md) | `Application::build` constructs a `Config<()>` default; downstream tools with typed config override. |
 | [rtb-credentials](rtb-credentials.md) | `CredentialRef` deserialises from config. |
 
@@ -224,7 +224,7 @@ assert_eq!(cfg.get().port, 9999);
 ## Related
 
 - [Configuration](../concepts/configuration.md) — concept-level overview.
-- [rtb-core](rtb-core.md) — where `App.config` lives.
+- [rtb-app](rtb-app.md) — where `App.config` lives.
 
 [figment]: https://crates.io/crates/figment
 [arc-swap]: https://crates.io/crates/arc-swap

@@ -14,7 +14,7 @@ commit; acceptance suite (13 unit + 6 BDD) went green on second run
 (first run caught figment's `.split("_")` requirement for nested env
 keys, fixed in-commit before landing).
 **Target crate:** `rtb-config`
-**Feeds:** `rtb-core` (App.config), downstream tools.
+**Feeds:** `rtb-app` (App.config), downstream tools.
 **Parent contract:** [§4 of the framework spec](rust-tool-base.md#4-configuration-rtb-config).
 
 ---
@@ -37,7 +37,7 @@ we have a CLI wiring to exercise it.
 ### In scope for v0.1
 
 - `Config<C = ()>` generic container. `C` defaults to `()` so
-  `Arc<Config>` (rtb-core's current usage) resolves to `Arc<Config<()>>`
+  `Arc<Config>` (rtb-app's current usage) resolves to `Arc<Config<()>>`
   without an explicit type parameter.
 - `ConfigBuilder<C>` with three sources — **embedded default**, **user
   file**, **env vars** — layered in that precedence (last wins).
@@ -246,7 +246,7 @@ Feature file: `crates/rtb-config/tests/features/config.feature`.
 ## 7. Rollout plan
 
 1. Land the spec + tests + implementation in a `feat(config)` commit.
-2. Update `rtb-core::app::App` to use `Config` (which now resolves via
+2. Update `rtb-app::app::App` to use `Config` (which now resolves via
    default generic to `Config<()>`). No API change visible from App's
    user — it is a transparent refactor.
 3. Add `rtb-config` as a dep in `rtb-cli` once that crate starts its

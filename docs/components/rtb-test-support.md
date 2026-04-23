@@ -11,7 +11,7 @@ since: 0.1.0
 # rtb-test-support
 
 `rtb-test-support` is the promoted test-side constructor for
-[`rtb_core::App`]. It provides [`TestAppBuilder`](#testappbuilder)
+[`rtb_app::App`]. It provides [`TestAppBuilder`](#testappbuilder)
 gated behind a crate-private sealed trait whose only implementor is
 [`TestWitness`](#testwitness). Downstream crates depend on this
 from `[dev-dependencies]` to get a consistent test-helper API.
@@ -33,13 +33,13 @@ overkill. `rtb-test-support` is the bypass path — opt-in via
 
 - **Sealed-trait `TestWitness`.** The bypass builder takes a value
   of a crate-private `Sealed` trait. Only this crate can construct
-  a `TestWitness`. Downstream crates that depend on `rtb-core` but
+  a `TestWitness`. Downstream crates that depend on `rtb-app` but
   not on `rtb-test-support` cannot call the bypass builder.
 - **`[dev-dependencies]` placement.** Production binaries that
-  only depend on `rtb-core` + `rtb-cli` do not compile
+  only depend on `rtb-app` + `rtb-cli` do not compile
   `rtb-test-support` in, and cannot reach `TestAppBuilder` at all.
-- **Honest caveat.** `rtb_core::App` has `pub` fields, so any
-  crate depending on `rtb-core` can construct an `App` via
+- **Honest caveat.** `rtb_app::App` has `pub` fields, so any
+  crate depending on `rtb-app` can construct an `App` via
   struct literal directly. The seal is a speed-bump + visibility
   signal, not watertight access control. Closing that gap requires
   a `pub(crate)` refactor of `App`'s fields; scheduled for v0.2+.
@@ -111,8 +111,8 @@ async fn my_test() {
 
 ## Relationship to `App::for_testing`
 
-`rtb_core::App::for_testing` is the existing `#[doc(hidden)] pub fn`
-helper used by tests within `rtb-core` itself. It remains in place
+`rtb_app::App::for_testing` is the existing `#[doc(hidden)] pub fn`
+helper used by tests within `rtb-app` itself. It remains in place
 for those internal tests. New downstream-crate tests should use
 `rtb-test-support`'s `TestAppBuilder` — it's the promoted, more
 ergonomic path and its sealed-trait signature is the clearer
@@ -143,7 +143,7 @@ Post-0.1 work:
 
 ## Related
 
-- [rtb-core](rtb-core.md) — where `App::for_testing` lives.
+- [rtb-app](rtb-app.md) — where `App::for_testing` lives.
 - [Engineering Standards §2.7](../development/engineering-standards.md#27-doc_hidden-pub-is-not-access-control)
   — why the `#[doc(hidden)] pub` pattern is a smell and what
   sealed-trait replaces.

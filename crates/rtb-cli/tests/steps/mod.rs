@@ -4,7 +4,7 @@ pub mod cli_steps;
 
 use cucumber::World;
 
-use rtb_core::features::Features;
+use rtb_app::features::Features;
 
 #[derive(Debug, Default, World)]
 pub struct CliWorld {

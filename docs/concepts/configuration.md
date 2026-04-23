@@ -81,7 +81,7 @@ chain, so we don't provide it.
 
 ## Generic parameter default
 
-`Config<C = ()>` — when a downstream crate (notably `rtb-core`'s
+`Config<C = ()>` — when a downstream crate (notably `rtb-app`'s
 `App`) holds an `Arc<Config>` without a type parameter, `C` defaults
 to `()`. Tool authors that need typed config use `Config<MyConfig>`
 explicitly.

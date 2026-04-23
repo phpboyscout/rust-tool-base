@@ -12,7 +12,7 @@
 //! * a [`tokio_util::sync::CancellationToken`] bound to `SIGINT` and
 //!   Unix `SIGTERM`,
 //! * clap-based command parsing with built-in subcommands filtered by
-//!   the runtime [`rtb_core::features::Features`] set.
+//!   the runtime [`rtb_app::features::Features`] set.
 //!
 //! ```ignore
 //! use rtb_cli::prelude::*;
@@ -46,6 +46,6 @@ pub use init::Initialiser;
 /// Glob-importable convenience prelude for downstream `fn main()`.
 pub mod prelude {
     pub use crate::application::Application;
-    pub use rtb_core::prelude::*;
+    pub use rtb_app::prelude::*;
     pub use rtb_error::{Error as RtbError, Result as RtbResult};
 }

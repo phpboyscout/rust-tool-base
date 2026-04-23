@@ -2,7 +2,7 @@
 
 use async_trait::async_trait;
 use linkme::distributed_slice;
-use rtb_core::app::App;
+use rtb_app::app::App;
 
 /// A single health-check's verdict.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -66,7 +66,7 @@ pub trait HealthCheck: Send + Sync + 'static {
 ///
 /// ```ignore
 /// use rtb_cli::health::{HealthCheck, HEALTH_CHECKS};
-/// use rtb_core::linkme::distributed_slice;
+/// use rtb_app::linkme::distributed_slice;
 ///
 /// #[distributed_slice(HEALTH_CHECKS)]
 /// fn register() -> Box<dyn HealthCheck> { Box::new(MyCheck) }
