@@ -50,6 +50,11 @@ async fn setup_gitea() -> GiteaFixture {
         .with_env_var("GITEA__server__ROOT_URL", "http://127.0.0.1:3000/")
         .with_env_var("USER_UID", "1000")
         .with_env_var("USER_GID", "1000")
+        // GitHub Actions `ubuntu-latest` runners regularly exceed the
+        // testcontainers-rs default 60-second startup window on the
+        // first image pull; bump to 180s so a slow runner doesn't
+        // flake the suite.
+        .with_startup_timeout(Duration::from_secs(180))
         .start()
         .await
         .expect("gitea container start");
