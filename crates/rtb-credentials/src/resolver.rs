@@ -3,7 +3,7 @@
 
 use std::sync::Arc;
 
-use secrecy::{ExposeSecret, SecretString};
+use secrecy::SecretString;
 
 use crate::error::CredentialError;
 use crate::reference::CredentialRef;
@@ -54,9 +54,11 @@ impl Resolver {
             if is_ci() {
                 return Err(CredentialError::LiteralRefusedInCi);
             }
-            // Clone the SecretString so we don't hand out a borrow
-            // tied to `cref`.
-            return Ok(SecretString::from(literal.expose_secret().to_string()));
+            // `SecretString::clone` keeps the value inside a
+            // zeroize-on-drop container for the whole copy. Going via
+            // `expose_secret().to_string()` would leave a plain
+            // `String` on the stack that isn't wiped on drop.
+            return Ok(literal.clone());
         }
 
         // 4. Ecosystem-default env var fallback.
