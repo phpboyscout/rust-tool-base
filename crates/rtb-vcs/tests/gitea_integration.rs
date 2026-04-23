@@ -41,6 +41,7 @@ const ADMIN_EMAIL: &str = "rtb-admin@example.invalid";
 
 /// Spawn a Gitea container, run one-off admin bootstrap, create a
 /// repo + release, and return the live base URL.
+#[allow(clippy::too_many_lines)] // bootstrap has many sequential steps
 async fn setup_gitea() -> GiteaFixture {
     let container = GenericImage::new(GITEA_IMAGE, GITEA_TAG)
         .with_exposed_port(3000.tcp())
@@ -104,11 +105,31 @@ async fn setup_gitea() -> GiteaFixture {
         .expect("exec admin create");
     drop(exec);
 
-    // Allow the admin user to settle before issuing API calls.
-    tokio::time::sleep(Duration::from_millis(500)).await;
+    // Poll until basic-auth against `GET /api/v1/user` resolves as
+    // the admin. Short sleep-then-retry replaces a fixed 500ms wait
+    // that sometimes wasn't long enough for Gitea to finish
+    // registering the newly-created user.
+    let client = reqwest::Client::new();
+    let admin_deadline = std::time::Instant::now() + Duration::from_secs(30);
+    loop {
+        let probe = client
+            .get(format!("http://{base}/api/v1/user"))
+            .basic_auth(ADMIN_USER, Some(ADMIN_PASS))
+            .send()
+            .await;
+        if let Ok(r) = probe {
+            if r.status().is_success() {
+                break;
+            }
+        }
+        assert!(
+            std::time::Instant::now() < admin_deadline,
+            "admin user basic-auth did not succeed within 30s"
+        );
+        tokio::time::sleep(Duration::from_millis(250)).await;
+    }
 
     // Create a PAT for the admin so the provider has a token to use.
-    let client = reqwest::Client::new();
     let pat_resp = client
         .post(format!("http://{base}/api/v1/users/{ADMIN_USER}/tokens"))
         .basic_auth(ADMIN_USER, Some(ADMIN_PASS))
