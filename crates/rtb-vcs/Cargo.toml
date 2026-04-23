@@ -21,7 +21,7 @@ workspace = true
 # targets one provider doesn't pay the compile-cost of the others.
 # GitHub is default-on; the other five become default-on as their
 # implementations land.
-default = ["github", "gitlab", "gitea", "codeberg", "direct"]
+default = ["github", "gitlab", "gitea", "codeberg", "direct", "bitbucket"]
 # Each backend is feature-gated so a downstream tool that only targets
 # one provider can trim the compile-cost of the others.
 github = ["_http"]
@@ -32,6 +32,7 @@ gitea = ["_http"]
 # coded to `codeberg.org`.
 codeberg = ["gitea"]
 direct = ["_http"]
+bitbucket = ["_http"]
 # Enables the testcontainers-backed integration-tests gated with
 # `#[cfg(feature = "integration")]`. Not default-on: requires Docker.
 integration = []

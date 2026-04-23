@@ -174,12 +174,22 @@ pub struct BitbucketParams {
     pub workspace: String,
     /// Repository slug.
     pub repo_slug: String,
+    /// Username for HTTP Basic auth (Bitbucket App Passwords require
+    /// username + password; the password is supplied via the
+    /// `SecretString` token passed to the factory). Optional — when
+    /// unset, requests are unauthenticated (Bitbucket Cloud allows
+    /// public-repo reads without auth).
+    #[serde(default)]
+    pub username: Option<String>,
     /// `true` when auth is required even for read operations.
     #[serde(default)]
     pub private: bool,
     /// Per-request timeout in seconds. `0` disables.
     #[serde(default = "BitbucketParams::default_timeout_seconds")]
     pub timeout_seconds: u64,
+    /// Test-only escape hatch — see [`GithubParams::allow_insecure_base_url`].
+    #[serde(skip)]
+    pub allow_insecure_base_url: bool,
 }
 
 impl BitbucketParams {
