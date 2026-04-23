@@ -1,6 +1,6 @@
 ---
 title: rtb-update v0.1
-status: DRAFT
+status: APPROVED
 date: 2026-04-23
 authors: [Matt Cockayne]
 crate: rtb-update
@@ -9,7 +9,7 @@ supersedes: null
 
 # `rtb-update` v0.1 — Self-update with signature verification
 
-**Status:** DRAFT — awaiting review.
+**Status:** APPROVED — ready for TDD / BDD work after `rtb-vcs` lands.
 **Target crate:** `rtb-update` (currently a stub).
 **Parent contract:**
 [§9 Update / self-replace](rust-tool-base.md#9-update--self-replace) of

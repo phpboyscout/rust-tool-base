@@ -1,6 +1,6 @@
 ---
 title: rtb-redact v0.1
-status: DRAFT
+status: APPROVED
 date: 2026-04-23
 authors: [Matt Cockayne]
 crate: rtb-redact
@@ -9,7 +9,7 @@ supersedes: null
 
 # `rtb-redact` v0.1 — Free-form secret redaction helper
 
-**Status:** DRAFT — awaiting review.
+**Status:** APPROVED — ready for TDD / BDD work.
 **Target crate:** `rtb-redact` (new).
 **Parent contract:**
 [`docs/development/engineering-standards.md` § 1.4 Credential redaction](../engineering-standards.md),

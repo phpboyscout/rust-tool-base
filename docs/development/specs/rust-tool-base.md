@@ -707,20 +707,28 @@ Minimum shippable scope:
 
 ### Pending
 
-- **0.2** — `rtb-update` (self-update with signature verification),
-  `rtb-docs` (TUI + markdown), `rtb-redact` helper for telemetry
-  attrs, `rtb-config::subscribe()` + hot-reload, OTLP sink in
+- **0.2** — `rtb-redact` (first; unblocks telemetry redaction),
+  `rtb-vcs` v0.1 (release-provider slice only: `ReleaseProvider`
+  trait + GitHub / GitLab / Bitbucket / Gitea / Codeberg / Direct
+  backends), `rtb-update` (self-update with signature verification,
+  consumes `rtb-vcs`), `rtb-docs` (ratatui + markdown + embedded-HTML
+  server for airgapped end-users),
+  `rtb-config::subscribe()` + hot-reload, OTLP sink in
   `rtb-telemetry`, HTTP JSON sink in `rtb-telemetry`.
   Remove the `update`/`docs`/`mcp` stubs from `rtb-cli`'s built-ins
-  as each real crate registers its own command.
+  as each real crate registers its own command. See
+  [`2026-04-23-v0.2-scope.md`](2026-04-23-v0.2-scope.md) for the
+  scope-refactor rationale (pulled `rtb-vcs` release slice forward
+  from v0.5 for GTB parity).
 - **0.3** — `rtb-ai` (genai + Anthropic-direct for caching/agents),
   `rtb-mcp` (`rmcp` SDK). Structured output via `schemars` +
   `jsonschema`.
 - **0.4** — `rtb-tui` (Wizard, tables, spinners), `rtb-cli`
   `credentials`/`telemetry`/`config-set` subcommands,
   `rtb-test-support` crate (replaces `App::for_testing`).
-- **0.5** — `rtb-vcs` (octocrab + gitlab + gix). Release providers
-  behind the `ReleaseProvider` trait. `rtb-update` switches to it.
+- **0.5** — `rtb-vcs` v0.2 (git-operations slice: the `Repo` type,
+  `gix`/`git2` adapters, commit/diff/blame/clone). Extends the crate
+  that shipped its release slice at v0.2.
 - **0.6** — `rtb-cli-bin` scaffolder with `rtb new`, `rtb generate`,
   `rtb regenerate`.
 - **1.0** — API freeze, semver commitment, full docs site.
