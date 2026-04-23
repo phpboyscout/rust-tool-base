@@ -171,38 +171,14 @@ fn __register_config() -> Box<dyn Command> {
 }
 
 // =====================================================================
-// Feature-disabled placeholders for docs / mcp.
+// Feature-disabled placeholder for mcp.
 //
-// The `update` stub has been removed — `rtb-update` v0.1 registers
-// the real command. Downstream tools that disable the rtb `update`
-// feature still get the stub's behaviour (no command registered;
-// clap reports "unknown subcommand" if invoked).
+// The `update` and `docs` stubs have been removed — `rtb-update` and
+// `rtb-docs` register the real commands. Downstream tools that
+// disable the corresponding rtb features still get the stub's
+// behaviour (no command registered; clap reports "unknown
+// subcommand" if invoked).
 // =====================================================================
-
-/// Placeholder for the `docs` subcommand.
-pub struct DocsStub;
-
-#[async_trait]
-impl Command for DocsStub {
-    fn spec(&self) -> &CommandSpec {
-        static SPEC: CommandSpec = CommandSpec {
-            name: "docs",
-            about: "Browse embedded documentation",
-            aliases: &[],
-            feature: Some(Feature::Docs),
-        };
-        &SPEC
-    }
-
-    async fn run(&self, _app: App) -> miette::Result<()> {
-        Err(rtb_error::Error::FeatureDisabled("docs").into())
-    }
-}
-
-#[distributed_slice(BUILTIN_COMMANDS)]
-fn __register_docs_stub() -> Box<dyn Command> {
-    Box::new(DocsStub)
-}
 
 /// Placeholder for the `mcp` subcommand.
 pub struct McpStub;
