@@ -1,6 +1,6 @@
 [package]
 name = "rtb-vcs"
-description = "Rust Tool Base — Git, GitHub, and GitLab abstractions."
+description = "Rust Tool Base — release-provider abstractions and backends (GitHub, GitLab, Bitbucket, Gitea, Codeberg, Direct)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -16,16 +16,42 @@ keywords.workspace = true
 [lints]
 workspace = true
 
+[features]
+# Each built-in backend is feature-gated so a downstream tool that only
+# targets GitHub doesn't pay the compile-cost of the others. The
+# foundation crate ships no backends — they arrive in follow-up PRs,
+# each adding their feature flag here.
+default = []
+
 [dependencies]
 rtb-app = { path = "../rtb-app", version = "0.1.1" }
 rtb-error = { path = "../rtb-error", version = "0.1.1" }
-gix = { workspace = true }
-octocrab = { workspace = true }
-gitlab = { workspace = true }
-reqwest = { workspace = true }
+
+# Async + trait plumbing
 tokio = { workspace = true }
 async-trait = { workspace = true }
+
+# Error type
 miette = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
+
+# Config types
+serde = { workspace = true }
+
+# Value types
+semver = { workspace = true }
+time = { workspace = true }
+
+# Secrets — providers accept an optional bearer token
 secrecy = { workspace = true }
+
+# Registry (linkme-backed distributed slice of provider factories)
+linkme = { workspace = true }
+
+# Structured logging at the trait layer
+tracing = { workspace = true }
+
+[dev-dependencies]
+cucumber = { workspace = true }
+serde_yaml = { workspace = true }
+serde_json = { workspace = true }
