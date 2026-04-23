@@ -41,7 +41,11 @@ const ADMIN_EMAIL: &str = "rtb-admin@example.invalid";
 
 /// Spawn a Gitea container, run one-off admin bootstrap, create a
 /// repo + release, and return the live base URL.
-#[allow(clippy::too_many_lines)] // bootstrap has many sequential steps
+#[allow(clippy::too_many_lines)]
+// bootstrap has many sequential steps
+// testcontainers `ExecResult` holds non-Send stream types; this future
+// only ever runs on a test reactor.
+#[allow(clippy::future_not_send)]
 async fn setup_gitea() -> GiteaFixture {
     let container = GenericImage::new(GITEA_IMAGE, GITEA_TAG)
         .with_exposed_port(3000.tcp())
