@@ -56,20 +56,17 @@ docs-open:
 
 # --- Zensical microsite (docs/ -> site/) -----------------------------
 #
-# First-time setup: `just site-setup` installs zensical + deps into a
-# local .venv using the hash-pinned requirements-lock.txt. Rerun after
-# bumping the lock file.
-site-setup:
-    python -m venv .venv
-    .venv/bin/pip install --require-hashes -r requirements-lock.txt
+# Assumes zensical is installed globally (e.g. `pipx install zensical`).
+# The CI workflow installs from requirements-lock.txt for reproducibility;
+# local contributors only need `zensical` on PATH.
 
 # Build the microsite into ./site/
 site-build:
-    .venv/bin/zensical build --clean
+    zensical build --clean
 
 # Serve the microsite locally with hot reload (default: http://127.0.0.1:8000).
 site-serve:
-    .venv/bin/zensical serve
+    zensical serve
 
 # Run the `rtb` scaffolder CLI locally.
 rtb *ARGS:

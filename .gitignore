@@ -30,8 +30,5 @@ Thumbs.db
 # trybuild workspace — overwritten stderr fixtures go here before being moved
 **/wip/
 
-# Zensical docs microsite — built output and local Python venv
+# Zensical docs microsite — built output
 /site
-/.venv
-/__pycache__
-**/*.pyc

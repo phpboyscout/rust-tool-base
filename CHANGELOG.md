@@ -20,12 +20,14 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 - **Zensical microsite infrastructure.** `zensical.toml` at repo
   root carries the theme + status taxonomy; `requirements-lock.txt`
   hash-pins the Python toolchain (zensical 0.0.33 + transitives)
-  matching the go-tool-base versions. `.github/workflows/docs.yaml`
-  builds on every PR (no deploy) and deploys to GitHub Pages on
-  push-to-main via `actions/deploy-pages`. Hash-pinned actions and
+  for reproducible CI builds, matching the go-tool-base versions.
+  `.github/workflows/docs.yaml` builds on every PR (no deploy) and
+  deploys to GitHub Pages on push-to-main via
+  `actions/deploy-pages`. Hash-pinned actions and
   `persist-credentials: false` on checkout mirror the go-tool-base
-  security posture. Local preview via `just site-setup` /
-  `just site-build` / `just site-serve`.
+  security posture. Local contributors run `just site-build` /
+  `just site-serve` assuming `zensical` is globally installed
+  (e.g. `pipx install zensical`).
 
 ### Fixed
 - Path-traversal vulnerability in `rtb-assets::DirectorySource`

@@ -78,13 +78,17 @@ just ci           # fmt-check + lint + docs + test + audit + coverage (default f
 just ci-full      # same with --all-features (requires libdbus on Linux)
 ```
 
-Zensical microsite (docs/ → site/):
+Zensical microsite (docs/ → site/). Assumes `zensical` is on PATH
+(`pipx install zensical`):
 
 ```bash
-just site-setup   # one-time: pipx-style install of zensical into .venv
 just site-build   # build the microsite into ./site/ (clean build)
 just site-serve   # local preview at http://127.0.0.1:8000 with hot reload
 ```
+
+The CI workflow (`.github/workflows/docs.yaml`) installs zensical
+from `requirements-lock.txt` into the ephemeral runner per run; local
+contributors only need it on PATH.
 
 Run a single test:
 ```bash
