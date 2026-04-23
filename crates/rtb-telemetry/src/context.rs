@@ -123,9 +123,26 @@ impl TelemetryContextBuilder {
     }
 
     /// Set the per-tool salt used in [`MachineId::derive`]. Required
-    /// when `policy == Enabled`; ignored otherwise. A per-tool salt
-    /// guarantees the same host yields different IDs for different
-    /// tools — which is what we want for privacy.
+    /// when `policy == Enabled`; ignored otherwise.
+    ///
+    /// # Correctness
+    ///
+    /// The salt **must** be unique and stable per tool, otherwise
+    /// two tools running on the same host will emit identical
+    /// machine IDs and become indistinguishable in the telemetry
+    /// backend. A failing pattern is passing a literal like
+    /// `"default"` from every tool's codebase — don't do that.
+    ///
+    /// The recommended pattern is to derive the salt from the tool's
+    /// name and a fixed version tag, e.g.:
+    ///
+    /// ```ignore
+    /// .salt(concat!(env!("CARGO_PKG_NAME"), ".telemetry.v1"))
+    /// ```
+    ///
+    /// Rotating the version tag (`.v1` → `.v2`) invalidates every
+    /// previously-recorded machine identity — the intended path for
+    /// "reset my telemetry identity" flows.
     pub fn salt(mut self, salt: impl Into<String>) -> Self {
         self.salt = Some(salt.into());
         self

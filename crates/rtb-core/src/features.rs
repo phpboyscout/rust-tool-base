@@ -45,9 +45,15 @@ impl Feature {
     }
 
     /// Every defined variant. Useful for debug introspection.
+    ///
+    /// Returns a slice rather than a fixed-size array because
+    /// [`Feature`] is `#[non_exhaustive]` — adding a variant is a
+    /// minor-version change that must not break downstream callers'
+    /// type signatures. A slice length is a value, not part of the
+    /// type.
     #[must_use]
-    pub const fn all() -> [Self; 10] {
-        [
+    pub const fn all() -> &'static [Self] {
+        &[
             Self::Init,
             Self::Version,
             Self::Update,

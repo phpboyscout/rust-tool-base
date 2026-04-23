@@ -19,8 +19,27 @@ pub struct Event {
     pub machine_id: String,
     /// RFC 3339 / ISO 8601 UTC timestamp.
     pub timestamp_utc: String,
-    /// Freeform string attributes. Callers own redaction of any
-    /// user-influenced values.
+    /// Freeform string attributes.
+    ///
+    /// # Privacy — callers own redaction
+    ///
+    /// v0.1 does not automatically redact attr values. Anything
+    /// placed here is shipped verbatim to the configured
+    /// [`crate::TelemetrySink`]. Tool authors must NOT pass:
+    ///
+    /// * Raw command-line arguments (may contain `--api-key=…`).
+    /// * File paths under the user's home directory.
+    /// * Error messages or panic payloads sourced from user input.
+    /// * Secret values (API keys, tokens, credentials of any kind).
+    /// * Free-form user-supplied strings without stripping.
+    ///
+    /// Safe attrs include: the command name, a stable enumerated
+    /// outcome (`ok`/`error`/`cancelled`), a duration bucket, a
+    /// framework-supplied version string. When in doubt, omit.
+    ///
+    /// A follow-up `rtb-redact` crate (v0.2) will ship a helper that
+    /// applies the framework's canonical redaction policy; until
+    /// then, redaction is every caller's responsibility.
     pub attrs: HashMap<String, String>,
 }
 

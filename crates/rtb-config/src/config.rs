@@ -132,6 +132,11 @@ where
     C: DeserializeOwned + Send + Sync + 'static,
 {
     sources: Sources,
+    // `PhantomData<fn() -> C>` rather than `PhantomData<C>` gives us
+    // the right variance (covariant in C, never holding a C value)
+    // without tripping drop-check invariants. `fn() -> C` is a
+    // function-pointer type, which is always `Send + Sync` even when
+    // C is neither — a useful property for a marker.
     _phantom: PhantomData<fn() -> C>,
 }
 

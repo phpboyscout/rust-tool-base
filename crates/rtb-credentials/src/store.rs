@@ -163,7 +163,10 @@ impl LiteralStore {
 #[async_trait]
 impl CredentialStore for LiteralStore {
     async fn get(&self, _: &str, _: &str) -> Result<SecretString, CredentialError> {
-        Ok(SecretString::from(self.secret.expose_secret().to_string()))
+        // `SecretString` is `Clone`; cloning produces a new
+        // zeroize-on-drop container without bouncing through a
+        // bare `String` intermediate.
+        Ok(self.secret.clone())
     }
 
     async fn set(&self, _: &str, _: &str, _: SecretString) -> Result<(), CredentialError> {
