@@ -110,18 +110,13 @@ async fn t6_disabled_feature_hides_command() {
 // T7 — FeatureDisabled stub for the Update command
 // ---------------------------------------------------------------------
 
-#[tokio::test]
-async fn t7_update_stub_returns_feature_disabled() {
-    // Default features include Update — stub should fire.
-    let app = basic_application();
-    let result = app.run_with_args(["mytool", "update"]).await;
-    assert!(result.is_err(), "update stub must error");
-    let err_str = format!("{:?}", result.err().unwrap());
-    assert!(
-        err_str.contains("update") && err_str.contains("not compiled in"),
-        "expected FeatureDisabled(\"update\"); got: {err_str}",
-    );
-}
+// t7 — retired. The `update` FeatureDisabled stub lived here until
+// `rtb-update` v0.1 took over the command registration. This test
+// binary doesn't link `rtb-update` (it's a separate crate), so
+// dispatching `update` now surfaces the generic "command not found"
+// clap path, which is already covered by T5 / CommandNotFound tests.
+// The real `update` flow's acceptance tests live in
+// `crates/rtb-update/tests/`.
 
 // ---------------------------------------------------------------------
 // T8 — doctor aggregates HEALTH_CHECKS and fails on Fail

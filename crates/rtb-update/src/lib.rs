@@ -1,16 +1,34 @@
-//! Self-update subsystem.
+//! Self-update subsystem for tools built on RTB.
 //!
-//! Wraps `self_update` for release discovery + download and `self-replace`
-//! for the atomic-swap-while-running dance on Windows/Unix. Signature
-//! verification uses `ed25519-dalek` over SHA-256 digests of the release
-//! archive, with the public key pinned in [`rtb_app::metadata::ToolMetadata`].
+//! # What this crate is
 //!
-//! **Status:** stub awaiting its real v0.1 spec + implementation.
-//! Target milestone is **v0.2**; see the framework spec's Roadmap
-//! (§16) in `docs/development/specs/rust-tool-base.md`.
+//! A composition of three standards-grade primitives:
+//! - [`rtb_vcs`] — fetches release metadata and streams asset bytes.
+//! - `ed25519-dalek` — verifies the vendor's detached signature.
+//! - `self-replace` — atomically swaps the running binary.
+//!
+//! The contribution is the *flow*: selection, download, verification,
+//! swap, report, rollback. Every step is a point at which a failure
+//! must be survivable — the binary on disk must remain either the old
+//! version or the fully-verified new one, never anything in between.
+//!
+//! See `docs/development/specs/2026-04-23-rtb-update-v0.1.md` for the
+//! full contract.
 
-// Stub crate — remove `#![allow(missing_docs)]` when the real surface
-// is documented. See the framework spec Roadmap for the target version.
-#![allow(missing_docs)]
+// `deny` (not `forbid`) so the CLI-command module can allow
+// `unsafe_code` for its `linkme::distributed_slice` registration —
+// same rationale as `rtb-vcs`. Every hand-rolled block in this crate
+// is safe, and the workspace-level `deny` still enforces the guarantee.
+#![deny(unsafe_code)]
 
-pub struct Updater;
+pub mod asset;
+pub mod command;
+pub mod error;
+pub mod flow;
+pub mod options;
+pub mod updater;
+pub mod verify;
+
+pub use error::UpdateError;
+pub use options::{CheckOutcome, ProgressEvent, ProgressSink, RunOptions, RunOutcome};
+pub use updater::{Updater, UpdaterBuilder};

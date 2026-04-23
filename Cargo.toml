@@ -131,6 +131,7 @@ sha2 = "0.10"
 blake3 = "1"
 tar = "0.4"
 flate2 = "1"
+zip = { version = "2", default-features = false, features = ["deflate"] }
 regex = "1"
 time = { version = "0.3", features = ["serde", "formatting", "parsing", "macros"] }
 uuid = { version = "1", features = ["v4", "serde"] }
@@ -145,6 +146,8 @@ insta = { version = "1", features = ["yaml", "json"] }
 assert_cmd = "2"
 wiremock = "0.6"
 testcontainers = "0.22"
+tempfile = "3"
+base64 = "0.22"
 predicates = "3"
 mockall = "0.13"
 jsonschema = "0.31"
