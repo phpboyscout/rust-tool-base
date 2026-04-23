@@ -1,10 +1,10 @@
 //! Step bodies for `tests/features/cli.feature`.
 
 use cucumber::{given, then, when};
+use rtb_app::features::{Feature, Features};
+use rtb_app::metadata::ToolMetadata;
+use rtb_app::version::VersionInfo;
 use rtb_cli::Application;
-use rtb_core::features::{Feature, Features};
-use rtb_core::metadata::ToolMetadata;
-use rtb_core::version::VersionInfo;
 use semver::Version;
 
 use super::CliWorld;

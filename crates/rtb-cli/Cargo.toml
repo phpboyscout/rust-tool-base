@@ -17,10 +17,10 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-rtb-core = { path = "../rtb-core", version = "0.1.0" }
-rtb-error = { path = "../rtb-error", version = "0.1.0" }
-rtb-config = { path = "../rtb-config", version = "0.1.0" }
-rtb-assets = { path = "../rtb-assets", version = "0.1.0" }
+rtb-app = { path = "../rtb-app", version = "0.1.1" }
+rtb-error = { path = "../rtb-error", version = "0.1.1" }
+rtb-config = { path = "../rtb-config", version = "0.1.1" }
+rtb-assets = { path = "../rtb-assets", version = "0.1.1" }
 clap = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }

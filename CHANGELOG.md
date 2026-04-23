@@ -14,6 +14,29 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 
 Nothing yet.
 
+## [0.1.1] — 2026-04-23
+
+Housekeeping release. No behavioural changes to shipped crates.
+
+### Changed
+
+- **`rtb-core` renamed to `rtb-app`.** The crate's primary export is
+  the `App` context, and its contents (metadata, version, features,
+  the `Command` trait) all orbit tool identity — "core" was an
+  abstract name that invited mis-reading. `rtb-app` makes the scope
+  explicit. All downstream imports updated; no API changes.
+- **`rtb-credentials`:** `Resolver` now clones `SecretString` directly
+  on the literal-credential path instead of round-tripping through
+  `expose_secret().to_string()`. Behavioural no-op — keeps the secret
+  inside the zeroize-on-drop container for the full copy. Caught by
+  the v0.1 secondary review.
+
+### Migration
+
+Rename every `use rtb_core::…` to `use rtb_app::…`, and every
+`rtb-core = { … }` Cargo dependency to `rtb-app = { … }`. The
+`prelude` re-export list is unchanged.
+
 ## [0.1.0] — 2026-04-23
 
 Initial workspace release. Eight shipped crates (seven feat + the
@@ -28,7 +51,7 @@ example.
   (report handler, panic hook, tool-specific footer). Footer
   closures run inside `catch_unwind` + a thread-local re-entry
   guard so a panicking closure can't poison the render pipeline.
-- **rtb-core** — `App` context, `ToolMetadata` + `bon::Builder`,
+- **rtb-app** — `App` context, `ToolMetadata` + `bon::Builder`,
   `VersionInfo`, `Features`/`FeaturesBuilder`, `Command` trait,
   `BUILTIN_COMMANDS` `linkme` distributed slice.
 - **rtb-config** — `Config<C = ()>` layered over `figment`, with
@@ -135,5 +158,6 @@ example.
 See `docs/development/specs/rust-tool-base.md` §16 for the full
 roadmap.
 
-[Unreleased]: https://github.com/phpboyscout/rust-tool-base/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/phpboyscout/rust-tool-base/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/phpboyscout/rust-tool-base/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/phpboyscout/rust-tool-base/releases/tag/v0.1.0

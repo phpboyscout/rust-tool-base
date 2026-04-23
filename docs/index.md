@@ -34,7 +34,7 @@ port of GTB's Go API. It embraces idiomatic Rust from top to bottom
   diagnostics.
 - **[Components](components/index.md)** — per-crate reference
   pages for every crate that has reached v0.1: `rtb-error`,
-  `rtb-core`, `rtb-config`, `rtb-assets`, `rtb-cli`,
+  `rtb-app`, `rtb-config`, `rtb-assets`, `rtb-cli`,
   `rtb-credentials`, `rtb-telemetry`, `rtb-test-support`.
 
 ## Building on RTB

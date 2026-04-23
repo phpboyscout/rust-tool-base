@@ -18,7 +18,7 @@ crates, see the [Concepts](../concepts/index.md) section.
 | Crate | Purpose | Key types |
 |---|---|---|
 | [`rtb-error`](rtb-error.md) | Canonical `Error` enum + miette hook pipeline. | `Error`, `Result`, `hook::install_*` |
-| [`rtb-core`](rtb-core.md) | `App` context, `ToolMetadata`, `Features`, `Command` trait, `BUILTIN_COMMANDS`. | `App`, `ToolMetadata`, `Command`, `BUILTIN_COMMANDS` |
+| [`rtb-app`](rtb-app.md) | `App` context, `ToolMetadata`, `Features`, `Command` trait, `BUILTIN_COMMANDS`. | `App`, `ToolMetadata`, `Command`, `BUILTIN_COMMANDS` |
 | [`rtb-config`](rtb-config.md) | Typed layered config over figment with atomic reload. | `Config<C>`, `ConfigBuilder<C>` |
 | [`rtb-assets`](rtb-assets.md) | Overlay asset FS over rust-embed + dirs + memory. | `Assets`, `AssetSource`, `AssetsBuilder` |
 | [`rtb-cli`](rtb-cli.md) | `Application::builder`, clap wiring, built-in commands. | `Application`, `HealthCheck`, `Initialiser` |
@@ -48,7 +48,7 @@ component doc when it reaches v0.1. Roadmap lives in framework spec
 - **New to RTB?** Start with [App context](../concepts/app-context.md)
   in the Concepts section, then [rtb-cli](rtb-cli.md) for the entry-
   point pattern.
-- **Implementing a new command?** [rtb-core](rtb-core.md)'s
+- **Implementing a new command?** [rtb-app](rtb-app.md)'s
   `Command` section and [rtb-cli](rtb-cli.md)'s "Replacing a built-in"
   walk through registration and dispatch.
 - **Authoring a new crate for the framework?** Read

@@ -92,7 +92,7 @@ contributors only need it on PATH.
 
 Run a single test:
 ```bash
-cargo nextest run -p rtb-core -- app::tests::it_clones_cheaply
+cargo nextest run -p rtb-app -- app::tests::it_clones_cheaply
 ```
 
 Useful one-offs:
@@ -123,7 +123,7 @@ All commits must follow [Conventional Commits](https://www.conventionalcommits.o
 
 ### Application Context: `App<C>`
 
-The central pattern is the `App<C: AppConfig>` struct in `rtb-core`. Every command handler receives an `App` by value (cheap — every field is `Arc`-wrapped). Fields:
+The central pattern is the `App<C: AppConfig>` struct in `rtb-app`. Every command handler receives an `App` by value (cheap — every field is `Arc`-wrapped). Fields:
 
 - `metadata: Arc<ToolMetadata>` — tool name, summary, release source, help channel
 - `version: Arc<VersionInfo>` — build-time semver + commit + date
@@ -139,7 +139,7 @@ The central pattern is the `App<C: AppConfig>` struct in `rtb-core`. Every comma
 
 Commands are `clap`-driven. `rtb-cli::Application::builder()` is a typestate builder (`bon`) that takes metadata, config type, assets, and a list of `Command` trait objects, installs `tracing`/`miette`/`tokio` plumbing, and returns an `Application::run().await` entry point.
 
-**Runtime feature flags** (`rtb_core::Features`) control which built-in commands are active for a given invocation — orthogonal to Cargo features, which control what is compiled in:
+**Runtime feature flags** (`rtb_app::Features`) control which built-in commands are active for a given invocation — orthogonal to Cargo features, which control what is compiled in:
 
 ```rust
 Application::builder()
@@ -230,7 +230,7 @@ All URL-opening must route through `rtb-cli::browser::open_url`. Do not call `op
 
 ### Regex Compilation
 
-Any `regex::Regex::new` (or `regex::RegexBuilder`) call whose pattern originates outside the binary (config file, CLI flag, TUI input, HTTP payload, message queue) must route through `rtb_core::regex_util::compile_bounded`. The helper sets `RegexBuilder::size_limit(1 MiB)` and `dfa_size_limit(8 MiB)` to cap memory, and rejects patterns longer than 1 KiB. Rust's `regex` is already time-safe (Thompson NFA, linear time), so no compile timeout is needed — unlike GTB's Go counterpart.
+Any `regex::Regex::new` (or `regex::RegexBuilder`) call whose pattern originates outside the binary (config file, CLI flag, TUI input, HTTP payload, message queue) must route through `rtb_app::regex_util::compile_bounded`. The helper sets `RegexBuilder::size_limit(1 MiB)` and `dfa_size_limit(8 MiB)` to cap memory, and rejects patterns longer than 1 KiB. Rust's `regex` is already time-safe (Thompson NFA, linear time), so no compile timeout is needed — unlike GTB's Go counterpart.
 
 Literal patterns known at build time may use `regex::Regex::new` directly or, preferably, `once_cell::sync::Lazy<Regex>`.
 
@@ -240,7 +240,7 @@ Literal patterns known at build time may use `regex::Regex::new` directly or, pr
 
 ### Credential Redaction
 
-Use `rtb_core::redact` for any free-form string written to telemetry, distributed logs, or a third-party observability surface. `redact::string` strips URL userinfo, common credential query parameters, Authorization headers, well-known provider prefixes (`sk-`, `ghp_`, `AIza`, `AKIA`, Slack, Anthropic `sk-ant-…`), and very long opaque tokens. `rtb-telemetry` applies it automatically to `args` and `err_msg`; `rtb-cli`'s HTTP middleware uses `redact::SENSITIVE_HEADERS` to redact headers at DEBUG.
+Use `rtb_app::redact` for any free-form string written to telemetry, distributed logs, or a third-party observability surface. `redact::string` strips URL userinfo, common credential query parameters, Authorization headers, well-known provider prefixes (`sk-`, `ghp_`, `AIza`, `AKIA`, Slack, Anthropic `sk-ant-…`), and very long opaque tokens. `rtb-telemetry` applies it automatically to `args` and `err_msg`; `rtb-cli`'s HTTP middleware uses `redact::SENSITIVE_HEADERS` to redact headers at DEBUG.
 
 ### Credential Storage
 
@@ -282,7 +282,7 @@ Releases are driven by `cargo-dist` (now named `dist`) for artefact builds and `
 - `CHANGELOG.md` follows [Keep a Changelog](https://keepachangelog.com/).
 - Pre-release: `just ci`, then `dist build --target=<host-triple>` locally to verify artefact shape.
 
-`crates.io` publication is dependency-ordered (`rtb-error` → `rtb-core` → leaves → `rtb` umbrella → `rtb-cli-bin`). The `release.yaml` workflow handles the ordering.
+`crates.io` publication is dependency-ordered (`rtb-error` → `rtb-app` → leaves → `rtb` umbrella → `rtb-cli-bin`). The `release.yaml` workflow handles the ordering.
 
 ## Anti-patterns (quick reference)
 

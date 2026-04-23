@@ -10,6 +10,8 @@ Cargo.lock.bak
 
 # Local Claude Code overrides (permissions, etc.) — project-level settings.json is committed
 .claude/settings.local.json
+# Claude Code session state (scheduled wakeups, etc.) — purely local.
+.claude/scheduled_tasks.lock
 
 # OS
 .DS_Store

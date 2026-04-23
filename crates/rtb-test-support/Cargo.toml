@@ -17,8 +17,8 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-rtb-core = { path = "../rtb-core", version = "0.1.0" }
-rtb-config = { path = "../rtb-config", version = "0.1.0" }
-rtb-assets = { path = "../rtb-assets", version = "0.1.0" }
+rtb-app = { path = "../rtb-app", version = "0.1.1" }
+rtb-config = { path = "../rtb-config", version = "0.1.1" }
+rtb-assets = { path = "../rtb-assets", version = "0.1.1" }
 tokio-util = { workspace = true }
 semver = { workspace = true }

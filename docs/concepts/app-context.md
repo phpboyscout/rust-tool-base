@@ -5,7 +5,7 @@ description: The App struct — what it carries, how it flows through commands, 
 
 # App context
 
-`rtb_core::app::App` is the single object every command handler
+`rtb_app::app::App` is the single object every command handler
 receives. It holds:
 
 | Field | Type | Purpose |

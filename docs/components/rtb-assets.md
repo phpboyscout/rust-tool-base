@@ -71,7 +71,7 @@ impl Assets {
 }
 ```
 
-Empty `Assets::default()` is used by `rtb-core::App::for_testing`.
+Empty `Assets::default()` is used by `rtb-app::App::for_testing`.
 
 ### `AssetsBuilder`
 
@@ -206,7 +206,7 @@ assert_eq!(theme.palette.accent, "pink");       // from user
 
 | Crate | Uses |
 |---|---|
-| [rtb-core](rtb-core.md) | `App.assets` holds `Arc<Assets>`. |
+| [rtb-app](rtb-app.md) | `App.assets` holds `Arc<Assets>`. |
 | [rtb-cli](rtb-cli.md) | `Application::builder().assets(a)` threads in a user-constructed overlay. |
 | rtb-docs (v0.2) | TUI docs browser reads markdown via `list_dir` + `open_text`. |
 
@@ -225,7 +225,7 @@ assert_eq!(theme.palette.accent, "pink");       // from user
 
 ## Related
 
-- [rtb-core](rtb-core.md) — where `App.assets` lives.
+- [rtb-app](rtb-app.md) — where `App.assets` lives.
 - [rtb-config](rtb-config.md) — structured layering of YAML config (different scope; assets are blobs, config is typed).
 - [Engineering Standards §1.1](../development/engineering-standards.md#11-path-handling) — path-handling rules.
 

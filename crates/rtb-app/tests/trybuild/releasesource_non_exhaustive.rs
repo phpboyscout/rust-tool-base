@@ -1,6 +1,6 @@
 //! T18 fixture — `ReleaseSource` is `#[non_exhaustive]`.
 
-use rtb_core::metadata::ReleaseSource;
+use rtb_app::metadata::ReleaseSource;
 
 fn classify(r: ReleaseSource) -> &'static str {
     match r {

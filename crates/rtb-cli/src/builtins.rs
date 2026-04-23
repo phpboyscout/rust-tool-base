@@ -1,15 +1,15 @@
 //! Built-in commands shipped with `rtb-cli`.
 //!
 //! Every built-in is an `impl Command` registered via
-//! [`rtb_core::command::BUILTIN_COMMANDS`]. `Application::run`
-//! filters them by the runtime [`Features`](rtb_core::features::Features)
+//! [`rtb_app::command::BUILTIN_COMMANDS`]. `Application::run`
+//! filters them by the runtime [`Features`](rtb_app::features::Features)
 //! set before handing them to `clap`.
 
 use async_trait::async_trait;
 use linkme::distributed_slice;
-use rtb_core::app::App;
-use rtb_core::command::{Command, CommandSpec, BUILTIN_COMMANDS};
-use rtb_core::features::Feature;
+use rtb_app::app::App;
+use rtb_app::command::{Command, CommandSpec, BUILTIN_COMMANDS};
+use rtb_app::features::Feature;
 
 use crate::health;
 use crate::init::INITIALISERS;
@@ -160,7 +160,7 @@ impl Command for ConfigShowCmd {
         // this command by registering their own impl with the same
         // name later in registration order.
         println!("# no typed configuration is installed on this App");
-        println!("# (rtb-core's App.config is Config<()> until App<C> lands)");
+        println!("# (rtb-app's App.config is Config<()> until App<C> lands)");
         Ok(())
     }
 }

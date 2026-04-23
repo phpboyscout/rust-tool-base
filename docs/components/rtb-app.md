@@ -1,5 +1,5 @@
 ---
-title: rtb-core
+title: rtb-app
 description: The App context, ToolMetadata, Features, Command trait, and the BUILTIN_COMMANDS distributed slice — the types every rtb-* crate ties to.
 date: 2026-04-23
 tags: [component, app, command, features, metadata, linkme]
@@ -8,9 +8,9 @@ status: implemented
 since: 0.1.0
 ---
 
-# rtb-core
+# rtb-app
 
-`rtb-core` is the structural heart of the framework. It defines:
+`rtb-app` is the structural heart of the framework. It defines:
 
 - [`App`](#app) — the cheap-to-clone application context threaded
   through every command handler.
@@ -30,7 +30,7 @@ crates (`rtb-cli` primarily).
 ## Overview
 
 Go Tool Base's `Props` struct is a heterogeneous bag of services.
-`rtb-core::App` is the Rust-idiomatic counterpart: typed fields,
+`rtb-app::App` is the Rust-idiomatic counterpart: typed fields,
 `Arc`-wrapped for cheap cloning, no `Box<dyn Any>` container
 anywhere. Downstream tools don't register services at runtime —
 they construct an `App` with the services they want and pass it to
@@ -258,7 +258,7 @@ Downstream crates register into `BUILTIN_COMMANDS` via the `linkme`
 attribute macro:
 
 ```rust
-use rtb_core::command::{BUILTIN_COMMANDS, Command, CommandSpec};
+use rtb_app::command::{BUILTIN_COMMANDS, Command, CommandSpec};
 use linkme::distributed_slice;
 
 pub struct MyCommand;
@@ -285,7 +285,7 @@ fn __register_my_cmd() -> Box<dyn Command> { Box::new(MyCommand) }
     The `#[distributed_slice]` attribute expands to `::linkme::...`
     paths, so every consumer crate needs `linkme = { workspace = true }`
     in its own `Cargo.toml`. Re-exporting through
-    `rtb_core::linkme` is not sufficient.
+    `rtb_app::linkme` is not sufficient.
 
 For library-level replaceability, a downstream crate can override a
 built-in command by registering a `Command` with the same name. The
@@ -334,8 +334,8 @@ re-export is convenience, not sufficient).
 ## Spec and status
 
 - **Status:** `IMPLEMENTED` since 0.1.0.
-- **Spec:** [`docs/development/specs/2026-04-22-rtb-core-v0.1.md`](../development/specs/2026-04-22-rtb-core-v0.1.md).
-- **Source:** [`crates/rtb-core/`](https://github.com/phpboyscout/rust-tool-base/tree/main/crates/rtb-core).
+- **Spec:** [`docs/development/specs/2026-04-22-rtb-app-v0.1.md`](../development/specs/2026-04-22-rtb-app-v0.1.md).
+- **Source:** [`crates/rtb-app/`](https://github.com/phpboyscout/rust-tool-base/tree/main/crates/rtb-app).
 
 ## Related
 

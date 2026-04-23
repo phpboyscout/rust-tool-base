@@ -1,4 +1,4 @@
-//! Test-only helpers for constructing an [`rtb_core::app::App`] without
+//! Test-only helpers for constructing an [`rtb_app::app::App`] without
 //! the full `rtb_cli::Application::builder` wiring.
 //!
 //! # What this crate provides
@@ -7,7 +7,7 @@
 //! the full `rtb-cli` lifecycle (logging, miette hook install,
 //! signal handlers). Promoted to downstream crates that want a
 //! consistent test-helper API — a replacement for the bare
-//! `App::for_testing` in `rtb-core`.
+//! `App::for_testing` in `rtb-app`.
 //!
 //! # Scope and honesty about sealing
 //!
@@ -18,9 +18,9 @@
 //! `[dev-dependencies]` prevents a production binary from reaching
 //! the builder through an accidental imports.
 //!
-//! It is **not** watertight access control. `rtb_core::App` has
-//! `pub` fields (see the rtb-core v0.1 spec open questions), so any
-//! crate that depends on rtb-core can also construct an `App` via
+//! It is **not** watertight access control. `rtb_app::App` has
+//! `pub` fields (see the rtb-app v0.1 spec open questions), so any
+//! crate that depends on rtb-app can also construct an `App` via
 //! struct-literal. The seal is a speed bump, not a fence. Post-0.1
 //! a `pub(crate)` field refactor + accessor methods would close
 //! this; for v0.1, `rtb-test-support` is the promoted test-helper
@@ -44,11 +44,11 @@
 
 use std::sync::Arc;
 
+use rtb_app::app::App;
+use rtb_app::metadata::ToolMetadata;
+use rtb_app::version::VersionInfo;
 use rtb_assets::Assets;
 use rtb_config::Config;
-use rtb_core::app::App;
-use rtb_core::metadata::ToolMetadata;
-use rtb_core::version::VersionInfo;
 use semver::Version;
 use tokio_util::sync::CancellationToken;
 
