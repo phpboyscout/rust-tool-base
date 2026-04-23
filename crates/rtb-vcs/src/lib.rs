@@ -43,8 +43,21 @@
 pub mod config;
 pub mod release;
 
+// Shared HTTP helpers for the REST-API backends. `pub(crate)` —
+// downstream custom backends roll their own.
+#[cfg(feature = "_http")]
+pub(crate) mod http;
+
+#[cfg(feature = "codeberg")]
+pub mod codeberg;
+#[cfg(feature = "direct")]
+pub mod direct;
+#[cfg(feature = "gitea")]
+pub mod gitea;
 #[cfg(feature = "github")]
 pub mod github;
+#[cfg(feature = "gitlab")]
+pub mod gitlab;
 
 pub use config::{
     BitbucketParams, CodebergParams, DirectParams, GiteaParams, GithubParams, GitlabParams,
