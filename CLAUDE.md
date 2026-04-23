@@ -64,16 +64,26 @@ New features must be implemented in a `crates/rtb-*` library crate before being 
 This project uses `just` as the task runner:
 
 ```bash
-just              # Default: cargo check --workspace --all-targets --all-features
+just              # Default: cargo check --workspace --all-targets
 just build        # cargo build --workspace --all-targets
 just fmt          # cargo fmt --all
 just fmt-check    # cargo fmt --all --check
-just lint         # cargo clippy --workspace --all-targets --all-features -- -D warnings
-just test         # cargo nextest (falls back to cargo test) --workspace --all-features
+just lint         # cargo clippy --workspace --all-targets -- -D warnings
+just test         # cargo nextest (falls back to cargo test) --workspace
 just audit        # cargo deny check
-just docs         # cargo doc --workspace --no-deps --all-features
+just docs         # cargo doc --workspace --no-deps with RUSTDOCFLAGS=-D warnings
+just docs-open    # ditto + opens in browser
 just rtb -- …     # Run the scaffolder CLI locally (cargo run -p rtb-cli-bin)
-just ci           # fmt-check + lint + test + audit
+just ci           # fmt-check + lint + docs + test + audit + coverage (default features)
+just ci-full      # same with --all-features (requires libdbus on Linux)
+```
+
+Zensical microsite (docs/ → site/):
+
+```bash
+just site-setup   # one-time: pipx-style install of zensical into .venv
+just site-build   # build the microsite into ./site/ (clean build)
+just site-serve   # local preview at http://127.0.0.1:8000 with hot reload
 ```
 
 Run a single test:
