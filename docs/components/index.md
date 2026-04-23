@@ -34,13 +34,14 @@ component doc when it reaches v0.1. Roadmap lives in framework spec
 
 | Crate | Target | Scope |
 |---|---|---|
-| `rtb-update` | v0.2 | `self_update` + `self-replace` + Ed25519 signature verification. |
-| `rtb-docs` | v0.2 | `ratatui` TUI markdown browser with streaming AI Q&A. |
-| `rtb-redact` | v0.2 | Redaction helper for telemetry attrs and log fields. |
+| `rtb-redact` | v0.2 | Redaction helper for telemetry attrs and log fields. Implementation order: **first**. |
+| `rtb-vcs` (release slice) | v0.2 | `ReleaseProvider` trait + GitHub / GitLab / Bitbucket / Gitea / Codeberg / Direct backends. Git-ops slice deferred to v0.5 as `rtb-vcs` v0.2. |
+| `rtb-update` | v0.2 | Self-update via `rtb-vcs` + `self-replace` + Ed25519 signature verification. |
+| `rtb-docs` | v0.2 | `ratatui` docs browser + embedded-HTML `docs serve` for airgapped end-users + streaming AI Q&A seam. |
 | `rtb-ai` | v0.3 | `genai` multi-provider + Anthropic-direct for cache/agents. |
 | `rtb-mcp` | v0.3 | `rmcp` SDK wrapper — commands as MCP tools. |
 | `rtb-tui` | v0.4 | `Wizard`, tables, spinners. |
-| `rtb-vcs` | v0.5 | octocrab + gitlab + gix. Release providers. |
+| `rtb-vcs` (git-ops slice) | v0.5 | `Repo` + `gix` / `git2` adapters; commit/diff/blame/clone. Extends the release slice shipped at v0.2. |
 | `rtb-cli-bin` | v0.6 | `rtb new`, `rtb generate`, `rtb regenerate` scaffolder. |
 
 ## Reading guide
