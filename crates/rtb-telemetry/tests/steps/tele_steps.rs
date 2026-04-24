@@ -72,6 +72,21 @@ async fn when_emit_to_file(world: &mut TelemetryWorld, name: String) {
     sink.emit(&event).await.unwrap();
 }
 
+#[when(regex = r#"^I emit an event named "([^"]+)" with args "([^"]+)" and err_msg "([^"]+)"$"#)]
+async fn when_emit_with_args_and_err(
+    world: &mut TelemetryWorld,
+    name: String,
+    args: String,
+    err: String,
+) {
+    let path = world.file_path.as_ref().expect("no file path").clone();
+    let sink = FileSink::new(path);
+    let event = Event::with_timestamp(name, "mytool", "1.0.0", "deadbeef", "2026-04-22T00:00:00Z")
+        .with_args(args)
+        .with_err_msg(err);
+    sink.emit(&event).await.unwrap();
+}
+
 #[when(regex = r#"^I derive the machine id with salt "([^"]+)" again$"#)]
 fn when_derive_b(world: &mut TelemetryWorld, salt: String) {
     world.id_b = Some(MachineId::derive(&salt));
@@ -123,6 +138,13 @@ fn then_file_contains(world: &mut TelemetryWorld, expected: String) {
         }
     }
     assert!(matched, "no line with name {expected:?} in:\n{raw}");
+}
+
+#[then(regex = r#"^the file does not contain "([^"]+)"$"#)]
+fn then_file_lacks(world: &mut TelemetryWorld, forbidden: String) {
+    let path = world.file_path.as_ref().expect("no file path");
+    let raw = std::fs::read_to_string(path).expect("read");
+    assert!(!raw.contains(&forbidden), "forbidden substring {forbidden:?} found in:\n{raw}");
 }
 
 #[then("the two ids are equal")]

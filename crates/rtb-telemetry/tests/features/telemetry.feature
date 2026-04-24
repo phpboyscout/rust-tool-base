@@ -38,3 +38,9 @@ Feature: rtb-telemetry — opt-in anonymous telemetry pipeline
     When I derive the machine id with salt "bdd-salt-1" again
     Then the two ids are equal
     And each id is 64 hex characters
+
+  Scenario: S7 — FileSink redacts args and err_msg before writing to disk
+    Given a new FileSink with a temporary path
+    When I emit an event named "cmd.run" with args "deploy --token ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" and err_msg "auth: Bearer ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    Then the file does not contain "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    And the file contains a JSON line with name "cmd.run"

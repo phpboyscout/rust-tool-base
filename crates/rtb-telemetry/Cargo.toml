@@ -27,6 +27,7 @@ thiserror = { workspace = true }
 miette = { workspace = true }
 time = { workspace = true }
 uuid = { workspace = true }
+rtb-redact = { path = "../rtb-redact", version = "0.1.1" }
 # v0.2 will add: reqwest (HttpSink), opentelemetry* (OtlpSink),
 # tracing + tracing-opentelemetry.
 
