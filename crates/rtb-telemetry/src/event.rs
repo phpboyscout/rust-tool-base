@@ -125,3 +125,18 @@ impl Event {
         clone
     }
 }
+
+/// Stringified severity discriminant.
+///
+/// `"ERROR"` when [`Event::err_msg`] is populated, `"INFO"`
+/// otherwise. Shared between [`crate::HttpSink`] (JSON body) and
+/// [`crate::OtlpSink`] (`OTel` `Severity` mapping) so both sinks
+/// agree on what a given event is.
+#[must_use]
+pub const fn severity_of(event: &Event) -> &'static str {
+    if event.err_msg.is_some() {
+        "ERROR"
+    } else {
+        "INFO"
+    }
+}
