@@ -31,9 +31,8 @@ async fn bdd() {
     // Cargo feature — skip them when running without the feature so
     // `cargo test --workspace` (default features) stays green.
     #[cfg(not(feature = "remote-sinks"))]
-    let runner = runner.filter_run("tests/features", |_, _, sc| {
-        !sc.tags.iter().any(|t| t == "remote-sinks")
-    });
+    let runner = runner
+        .filter_run("tests/features", |_, _, sc| !sc.tags.iter().any(|t| t == "remote-sinks"));
     #[cfg(feature = "remote-sinks")]
     let runner = runner.fail_on_skipped();
 
