@@ -25,9 +25,20 @@ use steps::TelemetryWorld;
 async fn bdd() {
     // `with_default_cli` skips cucumber's own CLI parsing so we don't fight
     // libtest/nextest over `std::env::args()` (nextest passes `--exact <name>`).
-    TelemetryWorld::cucumber()
-        .with_default_cli()
-        .fail_on_skipped()
-        .run_and_exit("tests/features")
-        .await;
+    let runner = TelemetryWorld::cucumber().with_default_cli();
+
+    // Scenarios tagged `@remote-sinks` depend on the `remote-sinks`
+    // Cargo feature — skip them when running without the feature so
+    // `cargo test --workspace` (default features) stays green.
+    #[cfg(not(feature = "remote-sinks"))]
+    let runner = runner.filter_run("tests/features", |_, _, sc| {
+        !sc.tags.iter().any(|t| t == "remote-sinks")
+    });
+    #[cfg(feature = "remote-sinks")]
+    let runner = runner.fail_on_skipped();
+
+    #[cfg(feature = "remote-sinks")]
+    runner.run_and_exit("tests/features").await;
+    #[cfg(not(feature = "remote-sinks"))]
+    runner.await;
 }

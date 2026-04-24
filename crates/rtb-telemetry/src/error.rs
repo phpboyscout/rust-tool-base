@@ -16,4 +16,15 @@ pub enum TelemetryError {
     #[error("serialisation error: {0}")]
     #[diagnostic(code(rtb::telemetry::serde))]
     Serde(String),
+
+    /// HTTP sink failure — bad endpoint, transport error, non-2xx
+    /// response. Details are already redacted by the sink.
+    #[error("HTTP telemetry sink error: {0}")]
+    #[diagnostic(code(rtb::telemetry::http))]
+    Http(String),
+
+    /// OTLP sink failure — pipeline build, export, or shutdown error.
+    #[error("OTLP telemetry sink error: {0}")]
+    #[diagnostic(code(rtb::telemetry::otlp))]
+    Otlp(String),
 }

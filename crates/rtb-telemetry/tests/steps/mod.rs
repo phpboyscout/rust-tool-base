@@ -16,4 +16,8 @@ pub struct TelemetryWorld {
     pub _tempdir: Option<tempfile::TempDir>,
     pub id_a: Option<String>,
     pub id_b: Option<String>,
+    #[cfg(feature = "remote-sinks")]
+    pub wiremock: Option<wiremock::MockServer>,
+    #[cfg(feature = "remote-sinks")]
+    pub otlp_error: Option<String>,
 }

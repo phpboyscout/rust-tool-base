@@ -44,3 +44,16 @@ Feature: rtb-telemetry — opt-in anonymous telemetry pipeline
     When I emit an event named "cmd.run" with args "deploy --token ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" and err_msg "auth: Bearer ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     Then the file does not contain "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
     And the file contains a JSON line with name "cmd.run"
+
+  @remote-sinks
+  Scenario: S8 — HttpSink posts redacted JSON to the configured endpoint
+    Given a wiremock server that accepts telemetry at "/ingest"
+    When I emit an HttpSink event named "cmd.http" with err_msg "auth: Bearer ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    Then the wiremock server received 1 request
+    And the received body contains severity ERROR
+    And the received body does not contain "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+
+  @remote-sinks
+  Scenario: S9 — OtlpSink rejects an endpoint with no recognised scheme
+    When I build an OtlpSink targeting "tcp://not-a-collector"
+    Then OtlpSink construction fails with an Otlp error

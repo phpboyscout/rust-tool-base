@@ -17,13 +17,16 @@
 //!
 //! # Sinks
 //!
-//! v0.1 ships three sinks: [`NoopSink`] (always-Ok drop),
-//! [`MemorySink`] (test fixture), and [`FileSink`] (newline-
-//! delimited JSON on disk). HTTP and OpenTelemetry OTLP sinks land
-//! in v0.2.
+//! - Always available: [`NoopSink`] (always-Ok drop), [`MemorySink`]
+//!   (test fixture), [`FileSink`] (newline-delimited JSON on disk).
+//! - Behind the `remote-sinks` Cargo feature: [`HttpSink`] (JSON
+//!   POST to an HTTPS endpoint) and [`OtlpSink`] (OTLP/gRPC or
+//!   OTLP/HTTP export). Both call [`Event::redacted`] before
+//!   serialisation.
 //!
-//! See `docs/development/specs/2026-04-22-rtb-telemetry-v0.1.md`
-//! for the authoritative contract.
+//! See `docs/development/specs/2026-04-22-rtb-telemetry-v0.1.md` and
+//! `docs/development/specs/2026-04-24-rtb-telemetry-http-otlp-sinks.md`
+//! for the authoritative contracts.
 
 #![forbid(unsafe_code)]
 
@@ -33,8 +36,18 @@ pub mod event;
 pub mod machine;
 pub mod sink;
 
+#[cfg(feature = "remote-sinks")]
+pub mod http_sink;
+#[cfg(feature = "remote-sinks")]
+pub mod otlp_sink;
+
 pub use context::{CollectionPolicy, TelemetryContext, TelemetryContextBuilder};
 pub use error::TelemetryError;
 pub use event::Event;
 pub use machine::MachineId;
 pub use sink::{FileSink, MemorySink, NoopSink, TelemetrySink};
+
+#[cfg(feature = "remote-sinks")]
+pub use http_sink::{HttpSink, HttpSinkConfig};
+#[cfg(feature = "remote-sinks")]
+pub use otlp_sink::{OtlpSink, OtlpSinkConfig};
