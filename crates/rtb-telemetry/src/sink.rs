@@ -131,10 +131,13 @@ impl FileSink {
 #[async_trait]
 impl TelemetrySink for FileSink {
     async fn emit(&self, event: &Event) -> Result<(), TelemetryError> {
+        // Redact `args` / `err_msg` before serialisation — the file
+        // is the first out-of-process surface.
+        let redacted = event.redacted();
         // Serialise the line outside the critical section — parsing
         // the event is the expensive part.
         let mut line =
-            serde_json::to_string(event).map_err(|e| TelemetryError::Serde(e.to_string()))?;
+            serde_json::to_string(&redacted).map_err(|e| TelemetryError::Serde(e.to_string()))?;
         line.push('\n');
 
         // Hold the write gate across parent-dir creation + open +

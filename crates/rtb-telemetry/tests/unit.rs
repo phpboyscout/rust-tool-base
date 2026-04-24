@@ -272,3 +272,70 @@ async fn t13_file_sink_concurrent_writes_are_line_safe() {
     }
     assert_eq!(valid_lines, 64, "expected one line per emit");
 }
+
+// ---------------------------------------------------------------------
+// T14 — Event carries optional `args` and `err_msg` fields set via
+// fluent builders and serialised alongside the existing fields.
+// ---------------------------------------------------------------------
+
+#[test]
+fn t14_event_has_args_and_err_msg() {
+    let event = Event::with_timestamp("cmd", "mytool", "1.0.0", "abc", "2026-04-24T00:00:00Z")
+        .with_args("--flag value")
+        .with_err_msg("short error");
+    assert_eq!(event.args.as_deref(), Some("--flag value"));
+    assert_eq!(event.err_msg.as_deref(), Some("short error"));
+
+    let json = serde_json::to_value(&event).unwrap();
+    assert_eq!(json["args"], "--flag value");
+    assert_eq!(json["err_msg"], "short error");
+}
+
+// ---------------------------------------------------------------------
+// T15 — Event::redacted() applies rtb-redact to args and err_msg while
+// leaving other fields untouched.
+// ---------------------------------------------------------------------
+
+#[test]
+fn t15_redacted_cleans_args_and_err_msg() {
+    let raw = Event::with_timestamp("cmd", "mytool", "1.0.0", "abc", "2026-04-24T00:00:00Z")
+        .with_attr("command", "deploy")
+        .with_args("deploy --token ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa")
+        .with_err_msg("request failed: Authorization: Bearer sk-ant-api03-xxxxxxxxxxxxxx");
+
+    let clean = raw.redacted();
+
+    // Attrs and metadata fields pass through untouched.
+    assert_eq!(clean.name, raw.name);
+    assert_eq!(clean.tool, raw.tool);
+    assert_eq!(clean.attrs.get("command").map(String::as_str), Some("deploy"));
+
+    let args = clean.args.as_deref().expect("args present");
+    assert!(!args.contains("ghp_aaaaaaaa"), "ghp_ token leaked: {args}");
+    let err = clean.err_msg.as_deref().expect("err_msg present");
+    assert!(!err.contains("sk-ant-api03-xxxxxxxxxxxxxx"), "anthropic key leaked: {err}");
+}
+
+// ---------------------------------------------------------------------
+// T16 — FileSink writes the redacted form: raw credentials never
+// appear in the JSONL line on disk.
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn t16_file_sink_redacts_before_write() {
+    let dir = tempfile::tempdir().unwrap();
+    let path = dir.path().join("redact.jsonl");
+    let sink = FileSink::new(&path);
+
+    let token = "ghp_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
+    let event = Event::with_timestamp("cmd", "mytool", "1.0.0", "abc", "2026-04-24T00:00:00Z")
+        .with_args(format!("deploy --token {token}"))
+        .with_err_msg(format!("auth header: Bearer {token}"));
+
+    sink.emit(&event).await.unwrap();
+
+    let raw = std::fs::read_to_string(&path).unwrap();
+    assert!(!raw.contains(token), "raw token leaked to disk:\n{raw}");
+    // Sanity-check the event name is still there so the record is usable.
+    assert!(raw.contains("\"name\":\"cmd\""), "name missing:\n{raw}");
+}

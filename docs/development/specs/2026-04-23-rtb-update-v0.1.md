@@ -1,6 +1,6 @@
 ---
 title: rtb-update v0.1
-status: APPROVED
+status: IMPLEMENTED
 date: 2026-04-23
 authors: [Matt Cockayne]
 crate: rtb-update

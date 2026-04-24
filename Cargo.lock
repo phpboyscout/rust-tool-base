@@ -4388,6 +4388,7 @@ dependencies = [
  "insta",
  "machine-uid",
  "miette",
+ "rtb-redact",
  "serde",
  "serde_json",
  "sha2",

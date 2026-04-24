@@ -19,27 +19,32 @@ pub struct Event {
     pub machine_id: String,
     /// RFC 3339 / ISO 8601 UTC timestamp.
     pub timestamp_utc: String,
+    /// Raw command-line args, when the caller chose to record them.
+    /// Redacted automatically by out-of-process sinks via
+    /// [`rtb_redact::string`]; see [`Event::redacted`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub args: Option<String>,
+    /// Error / panic message, when the caller chose to record it.
+    /// Redacted automatically by out-of-process sinks via
+    /// [`rtb_redact::string`]; see [`Event::redacted`].
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub err_msg: Option<String>,
     /// Freeform string attributes.
     ///
-    /// # Privacy — callers own redaction
+    /// # Privacy — callers own redaction for `attrs`
     ///
-    /// v0.1 does not automatically redact attr values. Anything
-    /// placed here is shipped verbatim to the configured
-    /// [`crate::TelemetrySink`]. Tool authors must NOT pass:
+    /// [`Event::args`] and [`Event::err_msg`] flow through the
+    /// framework redactor before leaving the process (see
+    /// [`Event::redacted`], applied by every built-in
+    /// out-of-process sink). Values placed in `attrs` are **not**
+    /// auto-redacted: callers must either use stable enumerated
+    /// values or run [`rtb_redact::string`] themselves.
     ///
-    /// * Raw command-line arguments (may contain `--api-key=…`).
-    /// * File paths under the user's home directory.
-    /// * Error messages or panic payloads sourced from user input.
-    /// * Secret values (API keys, tokens, credentials of any kind).
-    /// * Free-form user-supplied strings without stripping.
-    ///
-    /// Safe attrs include: the command name, a stable enumerated
-    /// outcome (`ok`/`error`/`cancelled`), a duration bucket, a
-    /// framework-supplied version string. When in doubt, omit.
-    ///
-    /// A follow-up `rtb-redact` crate (v0.2) will ship a helper that
-    /// applies the framework's canonical redaction policy; until
-    /// then, redaction is every caller's responsibility.
+    /// Prefer stable enumerated values for `attrs`: the command
+    /// name, an outcome (`ok`/`error`/`cancelled`), a duration
+    /// bucket, a framework-supplied version. Free-form strings
+    /// belong in `args` or `err_msg` so they pick up the automatic
+    /// redaction.
     pub attrs: HashMap<String, String>,
 }
 
@@ -61,6 +66,8 @@ impl Event {
             tool_version: tool_version.into(),
             machine_id: machine_id.into(),
             timestamp_utc: timestamp_utc.into(),
+            args: None,
+            err_msg: None,
             attrs: HashMap::new(),
         }
     }
@@ -85,5 +92,36 @@ impl Event {
     pub fn with_attr(mut self, key: impl Into<String>, value: impl Into<String>) -> Self {
         self.attrs.insert(key.into(), value.into());
         self
+    }
+
+    /// Attach raw command-line args. Redacted by outbound sinks via
+    /// [`Event::redacted`].
+    #[must_use]
+    pub fn with_args(mut self, args: impl Into<String>) -> Self {
+        self.args = Some(args.into());
+        self
+    }
+
+    /// Attach an error / panic message. Redacted by outbound sinks
+    /// via [`Event::redacted`].
+    #[must_use]
+    pub fn with_err_msg(mut self, msg: impl Into<String>) -> Self {
+        self.err_msg = Some(msg.into());
+        self
+    }
+
+    /// Return a clone with [`Event::args`] and [`Event::err_msg`]
+    /// passed through [`rtb_redact::string`]. Every built-in
+    /// out-of-process sink calls this before serialisation.
+    #[must_use]
+    pub fn redacted(&self) -> Self {
+        let mut clone = self.clone();
+        if let Some(raw) = &clone.args {
+            clone.args = Some(rtb_redact::string(raw).into_owned());
+        }
+        if let Some(raw) = &clone.err_msg {
+            clone.err_msg = Some(rtb_redact::string(raw).into_owned());
+        }
+        clone
     }
 }
