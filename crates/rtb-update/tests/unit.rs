@@ -152,6 +152,15 @@ fn self_test_returning(version: &'static str) -> flow::SelfTestFn {
     Arc::new(move |_p: &Path| Ok(format!("widget {version}")))
 }
 
+/// Per-test cache-dir guard. Tests that drive `Updater::run` (the
+/// path that stages the archive on disk) call this and pass the
+/// result's path via `.cache_dir(...)` so parallel test processes
+/// don't race each other on the shared
+/// `<project-cache>/widget/update/v1.2.3/` directory.
+fn isolated_cache() -> tempfile::TempDir {
+    tempfile::tempdir().expect("tempdir for staging")
+}
+
 // ---------------------------------------------------------------------
 // T1 — Builder requires both app and provider (compile-only check)
 // ---------------------------------------------------------------------
@@ -240,11 +249,13 @@ async fn t7_run_targets_specific_tag() {
     let provider: Arc<dyn ReleaseProvider> = Arc::new(provider);
 
     let swap = Arc::new(SwapCapture::default());
+    let cache = isolated_cache();
     let updater = Updater::builder()
         .app(&app)
         .provider(provider)
         .swap_fn(Arc::clone(&swap).as_fn())
         .self_test_fn(self_test_returning("v1.2.3"))
+        .cache_dir(cache.path())
         .build();
 
     let outcome = updater
@@ -280,11 +291,13 @@ async fn t8_missing_signature() {
     provider.release.assets[0].name = target_pattern;
     let provider: Arc<dyn ReleaseProvider> = Arc::new(provider);
 
+    let cache = isolated_cache();
     let updater = Updater::builder()
         .app(&app)
         .provider(provider)
         .swap_fn(Arc::new(SwapCapture::default()).as_fn())
         .self_test_fn(self_test_returning("v1.2.3"))
+        .cache_dir(cache.path())
         .build();
     let err = updater.run(RunOptions::default()).await.expect_err("missing sig");
     assert!(matches!(err, UpdateError::MissingSignature { .. }), "got {err:?}");
@@ -310,11 +323,13 @@ async fn t9_bad_signature() {
     provider.release.assets[1].name = sig_name.clone();
     let provider: Arc<dyn ReleaseProvider> = Arc::new(provider);
 
+    let cache = isolated_cache();
     let updater = Updater::builder()
         .app(&app)
         .provider(provider)
         .swap_fn(Arc::new(SwapCapture::default()).as_fn())
         .self_test_fn(self_test_returning("v1.2.3"))
+        .cache_dir(cache.path())
         .build();
     let err = updater.run(RunOptions::default()).await.expect_err("bad sig");
     assert!(matches!(err, UpdateError::BadSignature { .. }), "got {err:?}");
@@ -352,11 +367,13 @@ async fn t12_no_matching_asset() {
     provider.release.assets[0].name = "widget-1.2.3-sparc-unknown-solaris.tar.gz".into();
     let provider: Arc<dyn ReleaseProvider> = Arc::new(provider);
 
+    let cache = isolated_cache();
     let updater = Updater::builder()
         .app(&app)
         .provider(provider)
         .swap_fn(Arc::new(SwapCapture::default()).as_fn())
         .self_test_fn(self_test_returning("v1.2.3"))
+        .cache_dir(cache.path())
         .build();
     let err = updater.run(RunOptions::default()).await.expect_err("no match");
     assert!(matches!(err, UpdateError::NoMatchingAsset { .. }), "got {err:?}");
@@ -382,11 +399,13 @@ async fn t13_self_test_failed() {
     let provider: Arc<dyn ReleaseProvider> = Arc::new(provider);
 
     // Self-test reports the WRONG version.
+    let cache = isolated_cache();
     let updater = Updater::builder()
         .app(&app)
         .provider(provider)
         .swap_fn(Arc::new(SwapCapture::default()).as_fn())
         .self_test_fn(self_test_returning("v0.0.1"))
+        .cache_dir(cache.path())
         .build();
     let err = updater.run(RunOptions::default()).await.expect_err("bad self-test");
     assert!(matches!(err, UpdateError::SelfTestFailed), "got {err:?}");
@@ -411,11 +430,13 @@ async fn t14_dry_run_does_not_swap() {
     let provider: Arc<dyn ReleaseProvider> = Arc::new(provider);
 
     let swap = Arc::new(SwapCapture::default());
+    let cache = isolated_cache();
     let updater = Updater::builder()
         .app(&app)
         .provider(provider)
         .swap_fn(Arc::clone(&swap).as_fn())
         .self_test_fn(self_test_returning("v1.2.3"))
+        .cache_dir(cache.path())
         .build();
 
     let outcome =
@@ -462,11 +483,13 @@ async fn t17_progress_events_ordered() {
         Arc::new(move |e: ProgressEvent| events.lock().expect("poisoned").push(e))
     };
 
+    let cache = isolated_cache();
     let updater = Updater::builder()
         .app(&app)
         .provider(provider)
         .swap_fn(Arc::new(SwapCapture::default()).as_fn())
         .self_test_fn(self_test_returning("v1.2.3"))
+        .cache_dir(cache.path())
         .build();
     let _ =
         updater.run(RunOptions { progress: Some(sink), ..Default::default() }).await.expect("run");
