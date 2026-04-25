@@ -28,22 +28,31 @@
 //! assert_eq!(current.host, "localhost");
 //! ```
 //!
-//! # What v0.1 ships
+//! # What ships
 //!
 //! * Typed [`Config<C>`] with `C` defaulting to `()` so rtb-app's
 //!   `Arc<Config>` field keeps working without a type parameter.
 //! * [`ConfigBuilder`] layering (embedded default → user file → env).
 //! * Explicit [`Config::reload`] re-reading every source and atomically
 //!   swapping the stored value via `arc_swap::ArcSwap`.
+//! * [`Config::subscribe`] returning a `tokio::sync::watch::Receiver`
+//!   that wakes every time a reload succeeds (v0.2).
+//! * [`Config::watch_files`] behind the `hot-reload` feature: a
+//!   debounced background watcher that calls `reload` on change and
+//!   hands back a [`WatchHandle`] to stop it (v0.2).
 //!
-//! Hot reload via `notify` and a reactive `watch::Receiver` subscribe
-//! API land in v0.2. See the spec at
-//! `docs/development/specs/2026-04-22-rtb-config-v0.1.md`.
+//! See `docs/development/specs/2026-04-22-rtb-config-v0.1.md` and
+//! `docs/development/specs/2026-04-24-rtb-config-hot-reload.md` for
+//! the authoritative contracts.
 
 #![forbid(unsafe_code)]
 
 pub mod config;
 pub mod error;
+#[cfg(feature = "hot-reload")]
+pub mod watch;
 
 pub use config::{Config, ConfigBuilder};
 pub use error::ConfigError;
+#[cfg(feature = "hot-reload")]
+pub use watch::WatchHandle;
