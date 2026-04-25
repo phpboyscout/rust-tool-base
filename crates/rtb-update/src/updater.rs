@@ -3,7 +3,7 @@
 //! [`crate::flow`] for the step-by-step atomic-swap sequence.
 
 use std::marker::PhantomData;
-use std::path::Path;
+use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use rtb_app::app::App;
@@ -30,6 +30,12 @@ pub struct Updater {
     provider: Arc<dyn ReleaseProvider>,
     swap_fn: flow::SwapFn,
     self_test_fn: flow::SelfTestFn,
+    /// When `Some`, overrides the default
+    /// `<project-cache-dir>/<tool>/update/<tag>/` staging path. Tests
+    /// supply a per-test tempdir so parallel test processes don't
+    /// race the same on-disk artefacts. Production tools typically
+    /// leave this `None`.
+    cache_dir: Option<PathBuf>,
     include_framework_builtin: bool,
 }
 
@@ -43,6 +49,7 @@ impl Updater {
             provider: None,
             swap_fn: None,
             self_test_fn: None,
+            cache_dir: None,
             _markers: PhantomData,
         }
     }
@@ -116,7 +123,10 @@ impl Updater {
         let signature = asset::pick_signature(&release, asset)
             .ok_or_else(|| UpdateError::MissingSignature { asset: asset.name.clone() })?;
 
-        let cache_dir = flow::cache_dir_for(&self.app.metadata.name, &release.tag);
+        let cache_dir = self
+            .cache_dir
+            .clone()
+            .unwrap_or_else(|| flow::cache_dir_for(&self.app.metadata.name, &release.tag));
         std::fs::create_dir_all(&cache_dir)?;
         let staged_archive = cache_dir.join(&asset.name);
 
@@ -207,7 +217,10 @@ impl Updater {
         )?;
 
         let current = self.current_version().clone();
-        let cache_dir = flow::cache_dir_for(&self.app.metadata.name, "offline");
+        let cache_dir = self
+            .cache_dir
+            .clone()
+            .unwrap_or_else(|| flow::cache_dir_for(&self.app.metadata.name, "offline"));
         let bin_dir = cache_dir.join("bin");
         let staged_binary = flow::extract_binary(asset_path, &bin_dir, &self.app.metadata.name)?;
 
@@ -317,6 +330,7 @@ pub struct UpdaterBuilder<AppMarker, ProviderMarker> {
     provider: Option<Arc<dyn ReleaseProvider>>,
     swap_fn: Option<flow::SwapFn>,
     self_test_fn: Option<flow::SelfTestFn>,
+    cache_dir: Option<PathBuf>,
     _markers: PhantomData<(AppMarker, ProviderMarker)>,
 }
 
@@ -330,6 +344,7 @@ impl<P> UpdaterBuilder<NoApp, P> {
             provider: self.provider,
             swap_fn: self.swap_fn,
             self_test_fn: self.self_test_fn,
+            cache_dir: self.cache_dir,
             _markers: PhantomData,
         }
     }
@@ -346,6 +361,7 @@ impl<A> UpdaterBuilder<A, NoProvider> {
             provider: Some(provider),
             swap_fn: self.swap_fn,
             self_test_fn: self.self_test_fn,
+            cache_dir: self.cache_dir,
             _markers: PhantomData,
         }
     }
@@ -367,6 +383,20 @@ impl<A, P> UpdaterBuilder<A, P> {
         self.self_test_fn = Some(self_test_fn);
         self
     }
+
+    /// Override the cache directory used to stage downloaded archives
+    /// and extracted binaries. Defaults to the project cache dir
+    /// (resolved via `directories::ProjectDirs`) joined with the
+    /// release tag.
+    ///
+    /// Tools call this when they want isolation per-invocation
+    /// (e.g. CI runners, tests with parallel processes) or to honour
+    /// a user-supplied `--cache-dir` flag.
+    #[must_use]
+    pub fn cache_dir(mut self, cache_dir: impl Into<PathBuf>) -> Self {
+        self.cache_dir = Some(cache_dir.into());
+        self
+    }
 }
 
 impl UpdaterBuilder<HasApp, HasProvider> {
@@ -379,6 +409,7 @@ impl UpdaterBuilder<HasApp, HasProvider> {
             provider: self.provider.expect("HasProvider"),
             swap_fn: self.swap_fn.unwrap_or_else(flow::default_swap_fn),
             self_test_fn: self.self_test_fn.unwrap_or_else(flow::default_self_test_fn),
+            cache_dir: self.cache_dir,
             include_framework_builtin: true,
         }
     }
