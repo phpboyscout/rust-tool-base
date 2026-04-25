@@ -41,15 +41,14 @@
 #![allow(unsafe_code)]
 
 use std::sync::Arc;
-use std::time::Duration;
 
 use async_trait::async_trait;
 use linkme::distributed_slice;
 use secrecy::{ExposeSecret, SecretString};
 use tokio::io::AsyncRead;
-use tokio_util::io::StreamReader;
 
-use crate::config::{GithubParams, ReleaseSourceConfig};
+use crate::config::ReleaseSourceConfig;
+use crate::http;
 use crate::release::{
     ProviderError, ProviderFactory, ProviderRegistration, RegisteredProvider, Release,
     ReleaseAsset, ReleaseProvider, RELEASE_PROVIDERS,
@@ -149,9 +148,8 @@ pub fn factory(
     } else {
         normalise_host(&params.host)
     };
-    let timeout = timeout_for(params);
-    let client = build_client(timeout, params.allow_insecure_base_url)?;
-    let scheme = if params.allow_insecure_base_url { "http" } else { "https" };
+    let client = http::build_client(params.timeout_seconds, params.allow_insecure_base_url)?;
+    let scheme = http::scheme_for(params.allow_insecure_base_url);
 
     Ok(Arc::new(GithubProvider {
         client,
@@ -161,27 +159,6 @@ pub fn factory(
         repo: params.repo.clone(),
         token,
     }))
-}
-
-const fn timeout_for(params: &GithubParams) -> Option<Duration> {
-    if params.timeout_seconds == 0 {
-        None
-    } else {
-        Some(Duration::from_secs(params.timeout_seconds))
-    }
-}
-
-fn build_client(
-    timeout: Option<Duration>,
-    allow_insecure: bool,
-) -> Result<reqwest::Client, ProviderError> {
-    let mut builder = reqwest::Client::builder()
-        .https_only(!allow_insecure)
-        .user_agent(concat!("rtb-vcs/", env!("CARGO_PKG_VERSION")));
-    if let Some(t) = timeout {
-        builder = builder.timeout(t);
-    }
-    builder.build().map_err(|e| ProviderError::InvalidConfig(format!("reqwest build failed: {e}")))
 }
 
 /// Link-time registration entry. See [`crate::release::RELEASE_PROVIDERS`]
@@ -206,7 +183,7 @@ impl ReleaseProvider for GithubProvider {
             repo = self.repo
         );
         let resp = self.send(&url).await?;
-        let dto: ApiRelease = parse_json(resp).await?;
+        let dto: ApiRelease = http::parse_json(resp).await?;
         Ok(dto.into_release())
     }
 
@@ -217,10 +194,10 @@ impl ReleaseProvider for GithubProvider {
             host = self.host,
             owner = self.owner,
             repo = self.repo,
-            tag = urlencode(tag),
+            tag = http::urlencode(tag),
         );
         let resp = self.send(&url).await?;
-        let dto: ApiRelease = parse_json(resp).await?;
+        let dto: ApiRelease = http::parse_json(resp).await?;
         Ok(dto.into_release())
     }
 
@@ -237,7 +214,7 @@ impl ReleaseProvider for GithubProvider {
             repo = self.repo
         );
         let resp = self.send(&url).await?;
-        let dtos: Vec<ApiRelease> = parse_json(resp).await?;
+        let dtos: Vec<ApiRelease> = http::parse_json(resp).await?;
         Ok(dtos.into_iter().take(limit).map(ApiRelease::into_release).collect())
     }
 
@@ -257,11 +234,7 @@ impl ReleaseProvider for GithubProvider {
         }
         let resp = req.send().await.map_err(|e| ProviderError::Transport(e.to_string()))?;
         check_status(&resp, &self.host)?;
-
-        let content_length = resp.content_length().unwrap_or(0);
-        let stream = resp.bytes_stream().map_err_io();
-        let reader = StreamReader::new(stream);
-        Ok((Box::new(reader), content_length))
+        Ok(http::stream_body(resp))
     }
 }
 
@@ -285,79 +258,13 @@ impl GithubProvider {
     }
 }
 
-/// Translate a non-2xx response into the right [`ProviderError`]
-/// variant. Preserves `retry_after` from `Retry-After` /
-/// `X-RateLimit-Reset` when rate-limited.
+/// GitHub-specific status check: forwards to [`http::map_status_to_error`]
+/// with the GitHub-only signal that `403` + `X-RateLimit-Remaining: 0`
+/// is a rate-limit, not an auth failure.
 fn check_status(resp: &reqwest::Response, host: &str) -> Result<(), ProviderError> {
-    let status = resp.status();
-    if status.is_success() {
-        return Ok(());
-    }
-    let headers = resp.headers();
-    let remaining = header_str(headers, "x-ratelimit-remaining");
-    let is_rate_limit = status == reqwest::StatusCode::FORBIDDEN && remaining == Some("0");
-
-    if is_rate_limit || status == reqwest::StatusCode::TOO_MANY_REQUESTS {
-        let retry_after = retry_after_from_headers(headers);
-        return Err(ProviderError::RateLimited { host: host.to_string(), retry_after });
-    }
-    match status {
-        reqwest::StatusCode::UNAUTHORIZED => {
-            Err(ProviderError::Unauthorized { host: host.to_string() })
-        }
-        reqwest::StatusCode::NOT_FOUND => Err(ProviderError::NotFound {
-            what: format!("{} {}", status.as_u16(), status.canonical_reason().unwrap_or("")),
-        }),
-        _ => Err(ProviderError::Transport(format!("unexpected status {status} from {host}"))),
-    }
-}
-
-fn retry_after_from_headers(headers: &reqwest::header::HeaderMap) -> Option<Duration> {
-    if let Some(s) = header_str(headers, "retry-after") {
-        if let Ok(secs) = s.parse::<u64>() {
-            return Some(Duration::from_secs(secs));
-        }
-    }
-    if let Some(reset) = header_str(headers, "x-ratelimit-reset") {
-        if let Ok(epoch) = reset.parse::<i64>() {
-            let now = time::OffsetDateTime::now_utc().unix_timestamp();
-            if epoch > now {
-                let secs = u64::try_from(epoch - now).unwrap_or(0);
-                return Some(Duration::from_secs(secs));
-            }
-        }
-    }
-    None
-}
-
-fn header_str<'a>(headers: &'a reqwest::header::HeaderMap, name: &str) -> Option<&'a str> {
-    headers.get(name).and_then(|v| v.to_str().ok())
-}
-
-async fn parse_json<T: serde::de::DeserializeOwned>(
-    resp: reqwest::Response,
-) -> Result<T, ProviderError> {
-    resp.json::<T>().await.map_err(|e| ProviderError::MalformedResponse(e.to_string()))
-}
-
-/// Percent-encode a tag or path segment. Minimal — reserved chars from
-/// RFC 3986 that commonly appear in tags (`/`, `+`, `#`) get encoded;
-/// everything else passes through.
-fn urlencode(s: &str) -> String {
-    use std::fmt::Write as _;
-    let mut out = String::with_capacity(s.len());
-    for b in s.bytes() {
-        match b {
-            b'A'..=b'Z' | b'a'..=b'z' | b'0'..=b'9' | b'-' | b'_' | b'.' | b'~' => {
-                out.push(b as char);
-            }
-            _ => {
-                // Infallible: writing to a `String` never errors.
-                let _ = write!(out, "%{b:02X}");
-            }
-        }
-    }
-    out
+    let extra_rate_limit_signal = resp.status() == reqwest::StatusCode::FORBIDDEN
+        && http::header_str(resp.headers(), "x-ratelimit-remaining") == Some("0");
+    http::map_status_to_error(resp, host, extra_rate_limit_signal)
 }
 
 // ---------------------------------------------------------------------
@@ -426,54 +333,6 @@ impl ApiAsset {
 
 fn parse_iso8601(s: &str) -> Option<time::OffsetDateTime> {
     time::OffsetDateTime::parse(s, &time::format_description::well_known::Rfc3339).ok()
-}
-
-// ---------------------------------------------------------------------
-// Glue: reqwest byte stream -> tokio AsyncRead
-// ---------------------------------------------------------------------
-
-/// Extension trait so `resp.bytes_stream()` can be adapted into the
-/// `Stream<Item = io::Result<Bytes>>` shape `StreamReader` expects.
-trait StreamIoExt {
-    fn map_err_io(self) -> MapErrIo<Self>
-    where
-        Self: Sized;
-}
-
-impl<S> StreamIoExt for S
-where
-    S: futures_util::Stream<Item = reqwest::Result<bytes::Bytes>> + Send + Unpin,
-{
-    fn map_err_io(self) -> MapErrIo<Self> {
-        MapErrIo { inner: self }
-    }
-}
-
-/// Adapter turning `reqwest::Error` into `io::Error` for the byte
-/// stream. `StreamReader` wants `io::Result` items.
-pub struct MapErrIo<S> {
-    inner: S,
-}
-
-impl<S> futures_util::Stream for MapErrIo<S>
-where
-    S: futures_util::Stream<Item = reqwest::Result<bytes::Bytes>> + Send + Unpin,
-{
-    type Item = std::io::Result<bytes::Bytes>;
-    fn poll_next(
-        mut self: std::pin::Pin<&mut Self>,
-        cx: &mut std::task::Context<'_>,
-    ) -> std::task::Poll<Option<Self::Item>> {
-        use futures_util::StreamExt as _;
-        match self.inner.poll_next_unpin(cx) {
-            std::task::Poll::Ready(Some(Ok(bytes))) => std::task::Poll::Ready(Some(Ok(bytes))),
-            std::task::Poll::Ready(Some(Err(e))) => {
-                std::task::Poll::Ready(Some(Err(std::io::Error::other(e))))
-            }
-            std::task::Poll::Ready(None) => std::task::Poll::Ready(None),
-            std::task::Poll::Pending => std::task::Poll::Pending,
-        }
-    }
 }
 
 // ---------------------------------------------------------------------
