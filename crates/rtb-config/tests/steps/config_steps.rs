@@ -70,9 +70,16 @@ fn build_portonly(
 fn when_build_portonly(world: &mut ConfigWorld) {
     let cfg = build_portonly(world, None).expect("build");
     world.port_snapshot = Some(cfg.get().port);
-    // Retain the Config inside the world via the tempdir keepalive
-    // (dropped at end-of-scenario).
-    drop(cfg);
+    // Retain the Config when hot-reload scenarios might need it
+    // downstream (S7). Older scenarios ignore `live_cfg`.
+    #[cfg(feature = "hot-reload")]
+    {
+        world.live_cfg = Some(cfg);
+    }
+    #[cfg(not(feature = "hot-reload"))]
+    {
+        drop(cfg);
+    }
 }
 
 #[when(regex = r#"^I build a Config with prefix "([^"]+)" typed as PortOnly$"#)]
@@ -162,4 +169,45 @@ fn then_error_mentions(world: &mut ConfigWorld, needle: String) {
 #[then("the snapshot is the unit value")]
 fn then_snapshot_is_unit(world: &mut ConfigWorld) {
     assert!(world.unit_snapshot_seen, "unit-Config step did not run");
+}
+
+// ---------------------------------------------------------------------
+// S7 — hot-reload (feature-gated)
+// ---------------------------------------------------------------------
+
+#[cfg(feature = "hot-reload")]
+mod hot_reload {
+    use std::time::Duration;
+
+    use cucumber::{then, when};
+
+    use super::ConfigWorld;
+
+    #[when("I start watching files")]
+    fn when_start_watching(world: &mut ConfigWorld) {
+        let cfg = world.live_cfg.as_ref().expect("no live cfg retained");
+        let handle = cfg.watch_files().expect("watch starts");
+        world.watch_handle = Some(handle);
+        // Give the OS watcher a moment to register the path before
+        // the next step writes to it.
+        std::thread::sleep(Duration::from_millis(50));
+    }
+
+    #[then(regex = r"^a subscriber observes port (\d+) within (\d+) seconds$")]
+    async fn then_subscriber_observes(world: &mut ConfigWorld, expected: u16, seconds: u64) {
+        let cfg = world.live_cfg.as_ref().expect("no live cfg retained");
+        let rx = cfg.subscribe();
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(seconds);
+        loop {
+            if rx.borrow().port == expected {
+                return;
+            }
+            assert!(
+                tokio::time::Instant::now() < deadline,
+                "watcher did not observe port {expected} within {seconds}s; current={}",
+                rx.borrow().port,
+            );
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    }
 }

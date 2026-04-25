@@ -39,4 +39,8 @@ pub struct ConfigWorld {
     pub http_port_snapshot: Option<u16>,
     pub unit_snapshot_seen: bool,
     pub last_error: Option<ConfigError>,
+    #[cfg(feature = "hot-reload")]
+    pub live_cfg: Option<rtb_config::Config<PortOnly>>,
+    #[cfg(feature = "hot-reload")]
+    pub watch_handle: Option<rtb_config::WatchHandle>,
 }

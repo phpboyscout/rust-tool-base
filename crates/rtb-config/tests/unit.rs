@@ -290,3 +290,196 @@ fn t12_missing_file_is_ok() {
 fn builder_type_is_public() {
     let _b: ConfigBuilder<Sample> = ConfigBuilder::new();
 }
+
+// ---------------------------------------------------------------------
+// T13 — subscribe() yields the current value on initial borrow
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn t13_subscribe_initial_value() {
+    let cfg = Config::<Sample>::builder().embedded_default("port: 4200\n").build().expect("build");
+    let rx = cfg.subscribe();
+    assert_eq!(rx.borrow().port, 4200);
+}
+
+// ---------------------------------------------------------------------
+// T14 — subscribe()'s .changed().await fires after reload()
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn t14_subscribe_observes_reload() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("cfg.yaml");
+    std::fs::write(&path, "port: 100\n").unwrap();
+
+    let cfg = Config::<Sample>::builder()
+        .embedded_default("port: 0\n")
+        .user_file(&path)
+        .build()
+        .expect("build");
+    let mut rx = cfg.subscribe();
+    assert_eq!(rx.borrow().port, 100);
+
+    std::fs::write(&path, "port: 200\n").unwrap();
+    cfg.reload().expect("reload");
+
+    rx.changed().await.expect("channel open");
+    assert_eq!(rx.borrow().port, 200);
+}
+
+// ---------------------------------------------------------------------
+// T15 — failing reload leaves subscriber snapshot unchanged
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn t15_failing_reload_keeps_old_value() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("cfg.yaml");
+    std::fs::write(&path, "port: 100\n").unwrap();
+
+    let cfg = Config::<Sample>::builder()
+        .embedded_default("port: 0\n")
+        .user_file(&path)
+        .build()
+        .expect("build");
+    let rx = cfg.subscribe();
+    assert_eq!(rx.borrow().port, 100);
+
+    std::fs::write(&path, "port: not-a-number\n").unwrap();
+    let err = cfg.reload().expect_err("malformed YAML");
+    assert!(matches!(err, ConfigError::Parse(_)), "got {err:?}");
+
+    // Both the stored value AND the subscriber snapshot stay on 100.
+    assert_eq!(cfg.get().port, 100);
+    assert_eq!(rx.borrow().port, 100);
+}
+
+// ---------------------------------------------------------------------
+// T16 — late subscriber sees the current value, not the initial
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn t16_late_subscriber_sees_current() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("cfg.yaml");
+    std::fs::write(&path, "port: 10\n").unwrap();
+
+    let cfg = Config::<Sample>::builder()
+        .embedded_default("port: 0\n")
+        .user_file(&path)
+        .build()
+        .expect("build");
+
+    std::fs::write(&path, "port: 999\n").unwrap();
+    cfg.reload().expect("reload");
+
+    let rx = cfg.subscribe();
+    assert_eq!(rx.borrow().port, 999);
+}
+
+// ---------------------------------------------------------------------
+// T17 — dropping every subscriber doesn't break subsequent reload
+// ---------------------------------------------------------------------
+
+#[tokio::test]
+async fn t17_reload_after_all_subscribers_dropped() {
+    let dir = tempfile::tempdir().expect("tempdir");
+    let path = dir.path().join("cfg.yaml");
+    std::fs::write(&path, "port: 1\n").unwrap();
+
+    let cfg = Config::<Sample>::builder()
+        .embedded_default("port: 0\n")
+        .user_file(&path)
+        .build()
+        .expect("build");
+
+    {
+        let _rx = cfg.subscribe();
+    }
+    std::fs::write(&path, "port: 2\n").unwrap();
+    cfg.reload().expect("reload after all subscribers dropped");
+    assert_eq!(cfg.get().port, 2);
+}
+
+// ---------------------------------------------------------------------
+// T18–T20 — hot-reload feature
+// ---------------------------------------------------------------------
+
+#[cfg(feature = "hot-reload")]
+mod hot_reload_tests {
+    use std::time::Duration;
+
+    use rtb_config::{Config, ConfigError};
+
+    use super::Sample;
+
+    // T18 — watch_files with no user-file sources surfaces ConfigError::Watch.
+    #[test]
+    fn t18_watch_files_rejects_no_paths() {
+        let cfg = Config::<Sample>::builder().embedded_default("port: 0\n").build().expect("build");
+        let err = cfg.watch_files().expect_err("no user files");
+        assert!(matches!(err, ConfigError::Watch(_)), "got {err:?}");
+    }
+
+    // T19 — writing to a watched file triggers reload within ~500ms.
+    #[tokio::test]
+    async fn t19_file_change_triggers_reload() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("cfg.yaml");
+        std::fs::write(&path, "port: 10\n").unwrap();
+
+        let cfg = Config::<Sample>::builder()
+            .embedded_default("port: 0\n")
+            .user_file(&path)
+            .build()
+            .expect("build");
+        let rx = cfg.subscribe();
+        assert_eq!(rx.borrow().port, 10);
+
+        let _handle = cfg.watch_files().expect("watch starts");
+
+        // Give the watcher a moment to register the path, then write
+        // the new value.
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        std::fs::write(&path, "port: 20\n").unwrap();
+
+        // 250ms debounce + slack.
+        let deadline = tokio::time::Instant::now() + Duration::from_secs(2);
+        loop {
+            if rx.borrow().port == 20 {
+                break;
+            }
+            assert!(
+                tokio::time::Instant::now() < deadline,
+                "watcher did not reload within 2s; current port={}",
+                rx.borrow().port,
+            );
+            tokio::time::sleep(Duration::from_millis(50)).await;
+        }
+    }
+
+    // T20 — dropping the WatchHandle stops further reloads.
+    #[tokio::test]
+    async fn t20_dropping_handle_stops_watcher() {
+        let dir = tempfile::tempdir().expect("tempdir");
+        let path = dir.path().join("cfg.yaml");
+        std::fs::write(&path, "port: 1\n").unwrap();
+
+        let cfg = Config::<Sample>::builder()
+            .embedded_default("port: 0\n")
+            .user_file(&path)
+            .build()
+            .expect("build");
+        let handle = cfg.watch_files().expect("watch starts");
+        tokio::time::sleep(Duration::from_millis(50)).await;
+
+        drop(handle);
+        // After drop, file writes should NOT reload. Give ample slack.
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        std::fs::write(&path, "port: 99\n").unwrap();
+        tokio::time::sleep(Duration::from_millis(600)).await;
+
+        // `reload()` wasn't invoked, so the stored value is still 1.
+        assert_eq!(cfg.get().port, 1);
+    }
+}

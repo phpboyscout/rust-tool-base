@@ -37,3 +37,11 @@ Feature: rtb-config — typed, layered configuration
     And an environment variable "RTBCFG_BDD_NESTED_HTTP_PORT" set to "4242"
     When I build a Config with prefix "RTBCFG_BDD_NESTED_" typed as HttpOnly
     Then the nested http port is 4242
+
+  @hot-reload
+  Scenario: S7 — watch_files triggers reload on file change
+    Given a user file with content "port: 10"
+    When I build a Config typed as PortOnly
+    And I start watching files
+    And I rewrite the user file to "port: 20"
+    Then a subscriber observes port 20 within 2 seconds

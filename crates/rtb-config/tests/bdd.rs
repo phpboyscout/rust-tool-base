@@ -27,9 +27,15 @@ use steps::ConfigWorld;
 async fn bdd() {
     // `with_default_cli` skips cucumber's own CLI parsing so we don't fight
     // libtest/nextest over `std::env::args()` (nextest passes `--exact <name>`).
-    ConfigWorld::cucumber()
-        .with_default_cli()
-        .fail_on_skipped()
-        .run_and_exit("tests/features")
+    let runner = ConfigWorld::cucumber().with_default_cli();
+
+    // `@hot-reload`-tagged scenarios depend on the `hot-reload` Cargo
+    // feature; skip them when the feature is off so
+    // `cargo test --workspace` (default features) stays green.
+    #[cfg(feature = "hot-reload")]
+    runner.fail_on_skipped().run_and_exit("tests/features").await;
+    #[cfg(not(feature = "hot-reload"))]
+    runner
+        .filter_run("tests/features", |_, _, sc| !sc.tags.iter().any(|t| t == "hot-reload"))
         .await;
 }

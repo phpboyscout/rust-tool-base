@@ -32,6 +32,15 @@ pub enum ConfigError {
         #[source]
         source: std::io::Error,
     },
+
+    /// File watcher failed — no user-file paths registered, OS handle
+    /// limit, or an I/O error from the underlying `notify` backend.
+    /// Only constructable when the `hot-reload` feature is enabled,
+    /// but the variant is unconditionally present so downstream
+    /// `match` arms don't need cfg-gating.
+    #[error("config watcher error: {0}")]
+    #[diagnostic(code(rtb::config::watch))]
+    Watch(String),
 }
 
 impl From<figment::Error> for ConfigError {
