@@ -35,6 +35,7 @@ pub mod browser;
 pub mod command;
 pub mod error;
 pub mod index;
+pub mod loader;
 pub mod render;
 pub mod search;
 pub mod server;

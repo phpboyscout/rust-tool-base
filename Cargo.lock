@@ -4509,6 +4509,7 @@ version = "0.1.1"
 dependencies = [
  "async-trait",
  "axum",
+ "clap",
  "crossterm 0.28.1",
  "futures-core",
  "fuzzy-matcher",
