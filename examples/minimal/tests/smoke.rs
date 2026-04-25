@@ -79,3 +79,24 @@ fn update_command_discoverable() {
     // command exists and isn't the old FeatureDisabled error.
     bin().arg("update").assert().success().stdout(str::contains("rtb_update::Updater"));
 }
+
+// --- Contract: `docs --help` lists every subcommand ------------------
+
+#[test]
+fn docs_help_lists_subcommands() {
+    let output = bin().args(["docs", "--help"]).output().expect("docs --help");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for expected in ["list", "show", "browse", "serve", "ask"] {
+        assert!(stdout.contains(expected), "docs --help should mention {expected}; got:\n{stdout}",);
+    }
+}
+
+// --- Contract: `docs list` errs cleanly when no doc tree is shipped --
+
+#[test]
+fn docs_list_errors_when_no_assets() {
+    // The minimal example doesn't ship a `docs/` asset overlay, so the
+    // loader surfaces `RootMissing("docs")`. The CLI should report
+    // that as a non-zero exit, not panic or print a stack trace.
+    bin().args(["docs", "list"]).assert().failure();
+}

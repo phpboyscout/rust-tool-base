@@ -259,6 +259,23 @@ fn build_clap_tree(metadata: &ToolMetadata, commands: &[Box<dyn RtbCommand>]) ->
         for alias in spec.aliases {
             sub = sub.alias(*alias);
         }
+        if cmd.subcommand_passthrough() {
+            // Let the command own its inner clap subtree. The
+            // `trailing_var_arg` arg captures every token after
+            // `<name>` (including `--help`, `--flag value`, sub-sub-
+            // commands) without further validation — the command
+            // re-parses `std::env::args_os()` itself.
+            sub = sub.arg(
+                clap::Arg::new("rest")
+                    .num_args(0..)
+                    .trailing_var_arg(true)
+                    .allow_hyphen_values(true),
+            );
+            // Drop the auto-injected `--help` so it reaches the inner
+            // parser instead of clap's default help screen at the
+            // outer layer.
+            sub = sub.disable_help_flag(true);
+        }
         root = root.subcommand(sub);
     }
 

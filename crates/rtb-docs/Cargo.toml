@@ -64,6 +64,9 @@ serde_json = { workspace = true }
 # Link-time registration (docs command)
 linkme = { workspace = true }
 
+# `docs` CLI subcommand parsing — `list / show / browse / serve` flags
+clap = { workspace = true }
+
 # Stream adapters for the ai seam
 tokio-stream = "0.1"
 futures-core = "0.3"
