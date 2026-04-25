@@ -71,13 +71,24 @@ fn unknown_subcommand_fails() {
 // --- Contract: the `update` command is discoverable ----------------
 
 #[test]
-fn update_command_discoverable() {
-    // The minimal example links `rtb-update` through the rtb umbrella's
-    // `update` feature. `rtb-update` v0.1 ships a shim that prints a
-    // pointer at the `Updater` library API and exits 0 — the full CLI
-    // dispatch layer lands in v0.2.x. This smoke test just asserts the
-    // command exists and isn't the old FeatureDisabled error.
-    bin().arg("update").assert().success().stdout(str::contains("rtb_update::Updater"));
+fn update_help_lists_subcommands() {
+    let output = bin().args(["update", "--help"]).output().expect("update --help");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for expected in ["check", "run"] {
+        assert!(
+            stdout.contains(expected),
+            "update --help should mention {expected}; got:\n{stdout}",
+        );
+    }
+}
+
+#[test]
+fn update_check_errors_when_no_release_source() {
+    // The minimal example doesn't configure `release_source` on
+    // ToolMetadata, so `update check` should surface a clear error
+    // rather than panic. (Default subcommand for `update` is
+    // `check`; an arg-less invocation hits the same path.)
+    bin().arg("update").assert().failure();
 }
 
 // --- Contract: `docs --help` lists every subcommand ------------------
