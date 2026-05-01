@@ -23,10 +23,10 @@ default = []
 ai = []
 
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.1.1" }
-rtb-error = { path = "../rtb-error", version = "0.1.1" }
-rtb-assets = { path = "../rtb-assets", version = "0.1.1" }
-rtb-cli = { path = "../rtb-cli", version = "0.1.1" }
+rtb-app = { path = "../rtb-app", version = "0.2.0" }
+rtb-error = { path = "../rtb-error", version = "0.2.0" }
+rtb-assets = { path = "../rtb-assets", version = "0.2.0" }
+rtb-cli = { path = "../rtb-cli", version = "0.2.0" }
 
 # TUI
 ratatui = { workspace = true }

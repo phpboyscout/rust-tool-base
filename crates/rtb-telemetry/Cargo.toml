@@ -41,7 +41,7 @@ thiserror = { workspace = true }
 miette = { workspace = true }
 time = { workspace = true }
 uuid = { workspace = true }
-rtb-redact = { path = "../rtb-redact", version = "0.1.1" }
+rtb-redact = { path = "../rtb-redact", version = "0.2.0" }
 
 # Optional — gated on the `remote-sinks` feature.
 reqwest = { workspace = true, optional = true }
