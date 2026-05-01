@@ -37,9 +37,9 @@
 //!   swapping the stored value via `arc_swap::ArcSwap`.
 //! * [`Config::subscribe`] returning a `tokio::sync::watch::Receiver`
 //!   that wakes every time a reload succeeds (v0.2).
-//! * [`Config::watch_files`] behind the `hot-reload` feature: a
+//! * `Config::watch_files` behind the `hot-reload` feature: a
 //!   debounced background watcher that calls `reload` on change and
-//!   hands back a [`WatchHandle`] to stop it (v0.2).
+//!   hands back a `WatchHandle` to stop it (v0.2).
 //!
 //! See `docs/development/specs/2026-04-22-rtb-config-v0.1.md` and
 //! `docs/development/specs/2026-04-24-rtb-config-hot-reload.md` for

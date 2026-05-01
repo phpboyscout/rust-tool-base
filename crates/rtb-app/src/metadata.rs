@@ -31,6 +31,33 @@ pub enum ReleaseSource {
         #[serde(default = "default_gitlab_host")]
         host: String,
     },
+    /// A Bitbucket Cloud or Bitbucket Data Center release source.
+    Bitbucket {
+        /// Workspace (Cloud) or project key (Data Center).
+        workspace: String,
+        /// Repository slug.
+        repo_slug: String,
+        /// API host; defaults to `api.bitbucket.org/2.0` for Cloud.
+        #[serde(default = "default_bitbucket_host")]
+        host: String,
+    },
+    /// A self-hosted Gitea release source.
+    Gitea {
+        /// Repository owner.
+        owner: String,
+        /// Repository name.
+        repo: String,
+        /// API host — required (no public default).
+        host: String,
+    },
+    /// Codeberg — a hosted Gitea instance at `codeberg.org`. Distinct
+    /// variant rather than a Gitea alias for config-layer clarity.
+    Codeberg {
+        /// Repository owner.
+        owner: String,
+        /// Repository name.
+        repo: String,
+    },
     /// Direct HTTP release source (e.g. S3 bucket, CDN).
     Direct {
         /// URL template, e.g. `https://dist.example.com/{tool}/{version}/{asset}`.
@@ -44,6 +71,10 @@ fn default_github_host() -> String {
 
 fn default_gitlab_host() -> String {
     "gitlab.com".into()
+}
+
+fn default_bitbucket_host() -> String {
+    "api.bitbucket.org/2.0".into()
 }
 
 /// Static tool metadata set at construction time.
