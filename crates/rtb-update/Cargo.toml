@@ -1,6 +1,6 @@
 [package]
 name = "rtb-update"
-description = "Rust Tool Base — self-update subsystem."
+description = "Rust Tool Base — self-update subsystem. Composes on rtb-vcs to fetch signed release assets and atomically swap the running binary."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -17,16 +17,57 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.1.1" }
-rtb-error = { path = "../rtb-error", version = "0.1.1" }
-rtb-vcs = { path = "../rtb-vcs", version = "0.1.1" }
-self_update = { workspace = true }
-self-replace = { workspace = true }
-semver = { workspace = true }
-sha2 = { workspace = true }
-ed25519-dalek = { workspace = true }
-reqwest = { workspace = true }
+rtb-app = { path = "../rtb-app", version = "0.2.0" }
+rtb-error = { path = "../rtb-error", version = "0.2.0" }
+rtb-vcs = { path = "../rtb-vcs", version = "0.2.0", default-features = false }
+
+# Registry (BUILTIN_COMMANDS entry)
+linkme = { workspace = true }
+
+# Async + IO
 tokio = { workspace = true }
+tokio-util = { version = "0.7", features = ["io"] }
+async-trait = { workspace = true }
+
+# CLI dispatch
+clap = { workspace = true }
+
+# Error type
 miette = { workspace = true }
 thiserror = { workspace = true }
+
+# Structured logging
 tracing = { workspace = true }
+
+# Versioning
+semver = { workspace = true }
+
+# Integrity
+sha2 = { workspace = true }
+ed25519-dalek = { workspace = true }
+
+# Filesystem paths + self-replace
+self-replace = { workspace = true }
+directories = { workspace = true }
+
+# Archive extraction — release assets ship as .tar.gz / .zip
+tar = { workspace = true }
+flate2 = { workspace = true }
+zip = { workspace = true }
+
+# Base64 decode for minisign signature files.
+base64 = { workspace = true }
+
+# Serde — for parsing minisign's trust-database-free `.minisig` header
+# and for consumers that serialise progress events.
+serde = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["macros", "rt-multi-thread"] }
+cucumber = { workspace = true }
+tempfile = { workspace = true }
+time = { workspace = true }
+# Needed by the mock ReleaseAsset / Release fixtures in tests.
+# (rtb-update's own code doesn't use these directly — they're
+# transitively available via rtb-vcs, but its public types expose
+# `time::OffsetDateTime` so test files using the API still need it.)

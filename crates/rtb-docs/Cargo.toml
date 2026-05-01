@@ -1,6 +1,6 @@
 [package]
 name = "rtb-docs"
-description = "Rust Tool Base — TUI documentation browser with optional AI Q&A."
+description = "Rust Tool Base — interactive docs browser, embedded-HTML `docs serve` server, and AI Q&A seam."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -16,14 +16,61 @@ keywords.workspace = true
 [lints]
 workspace = true
 
+[features]
+# `ai` gates the Q&A seam — downstream tools enable it when they also
+# link `rtb-ai` (v0.3+). No-op without the trait being implemented.
+default = []
+ai = []
+
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.1.1" }
-rtb-error = { path = "../rtb-error", version = "0.1.1" }
-rtb-assets = { path = "../rtb-assets", version = "0.1.1" }
+rtb-app = { path = "../rtb-app", version = "0.2.0" }
+rtb-error = { path = "../rtb-error", version = "0.2.0" }
+rtb-assets = { path = "../rtb-assets", version = "0.2.0" }
+rtb-cli = { path = "../rtb-cli", version = "0.2.0" }
+
+# TUI
 ratatui = { workspace = true }
 crossterm = { workspace = true }
-termimad = { workspace = true }
+tui-markdown = { workspace = true }
+pulldown-cmark = { workspace = true }
+fuzzy-matcher = { workspace = true }
+
+# HTTP server (`docs serve`)
+axum = { workspace = true }
+hyper = { workspace = true }
+hyper-util = { workspace = true }
+tower = { workspace = true }
+
+# Full-text search
+tantivy = { workspace = true }
+
+# Async runtime + cancellation
 tokio = { workspace = true }
+tokio-util = { workspace = true }
+async-trait = { workspace = true }
+
+# Errors
 miette = { workspace = true }
 thiserror = { workspace = true }
+
+# Structured logging
 tracing = { workspace = true }
+
+# Config index parsing
+serde = { workspace = true }
+serde_yaml = { workspace = true }
+serde_json = { workspace = true }
+
+# Link-time registration (docs command)
+linkme = { workspace = true }
+
+# `docs` CLI subcommand parsing — `list / show / browse / serve` flags
+clap = { workspace = true }
+
+# Stream adapters for the ai seam
+tokio-stream = "0.1"
+futures-core = "0.3"
+
+[dev-dependencies]
+tempfile = { workspace = true }
+reqwest = { workspace = true }

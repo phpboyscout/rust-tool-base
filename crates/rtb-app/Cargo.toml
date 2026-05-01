@@ -17,9 +17,9 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-rtb-error = { path = "../rtb-error", version = "0.1.1" }
-rtb-config = { path = "../rtb-config", version = "0.1.1" }
-rtb-assets = { path = "../rtb-assets", version = "0.1.1" }
+rtb-error = { path = "../rtb-error", version = "0.2.0" }
+rtb-config = { path = "../rtb-config", version = "0.2.0" }
+rtb-assets = { path = "../rtb-assets", version = "0.2.0" }
 tokio-util = { workspace = true }
 async-trait = { workspace = true }
 serde = { workspace = true }

@@ -80,6 +80,19 @@ pub trait Command: Send + Sync + 'static {
     /// Execute the command. `app` is taken by value — `Clone` on `App`
     /// is O(1) so subcommands that fan out can `.clone()` freely.
     async fn run(&self, app: App) -> miette::Result<()>;
+
+    /// When `true`, `rtb-cli`'s top-level clap parser passes every
+    /// argument after `<name>` through to [`Self::run`] without
+    /// further validation. Commands that own their own clap subtree
+    /// (e.g. `docs list / show / browse / serve`, `update check / run`)
+    /// opt into this so the inner parser can produce its own help
+    /// and error messages.
+    ///
+    /// Defaults to `false` — most commands let the framework reject
+    /// unknown args at the outer layer.
+    fn subcommand_passthrough(&self) -> bool {
+        false
+    }
 }
 
 /// Link-time registry of [`Command`] factory functions.

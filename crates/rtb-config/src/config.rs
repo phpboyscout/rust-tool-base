@@ -8,6 +8,7 @@ use arc_swap::ArcSwap;
 use figment::providers::{Env, Format, Yaml};
 use figment::Figment;
 use serde::de::DeserializeOwned;
+use tokio::sync::watch;
 
 use crate::error::ConfigError;
 
@@ -25,7 +26,25 @@ where
     C: DeserializeOwned + Send + Sync + 'static,
 {
     current: Arc<ArcSwap<C>>,
-    sources: Arc<Sources>,
+    tx: Arc<watch::Sender<Arc<C>>>,
+    pub(crate) sources: Arc<Sources>,
+}
+
+impl<C> std::fmt::Debug for Config<C>
+where
+    C: DeserializeOwned + Send + Sync + 'static,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Don't render C — it may carry secrets or Debug-incompatible
+        // types. Surface the source inventory instead. `finish_non_exhaustive`
+        // silences `clippy::missing_fields_in_debug` — the stored
+        // value and watch sender are deliberately omitted.
+        f.debug_struct("Config")
+            .field("files", &self.sources.files)
+            .field("env_prefixes", &self.sources.envs)
+            .field("embedded_layers", &self.sources.embedded.len())
+            .finish_non_exhaustive()
+    }
 }
 
 impl<C> Clone for Config<C>
@@ -33,7 +52,11 @@ where
     C: DeserializeOwned + Send + Sync + 'static,
 {
     fn clone(&self) -> Self {
-        Self { current: Arc::clone(&self.current), sources: Arc::clone(&self.sources) }
+        Self {
+            current: Arc::clone(&self.current),
+            tx: Arc::clone(&self.tx),
+            sources: Arc::clone(&self.sources),
+        }
     }
 }
 
@@ -42,8 +65,11 @@ where
     C: DeserializeOwned + Default + Send + Sync + 'static,
 {
     fn default() -> Self {
+        let initial = Arc::new(C::default());
+        let (tx, _rx) = watch::channel(Arc::clone(&initial));
         Self {
-            current: Arc::new(ArcSwap::from_pointee(C::default())),
+            current: Arc::new(ArcSwap::from(initial)),
+            tx: Arc::new(tx),
             sources: Arc::new(Sources::default()),
         }
     }
@@ -73,18 +99,36 @@ where
     ///
     /// Errors leave the stored value untouched.
     pub fn reload(&self) -> Result<(), ConfigError> {
-        let parsed = self.sources.parse::<C>()?;
-        self.current.store(Arc::new(parsed));
+        let parsed = Arc::new(self.sources.parse::<C>()?);
+        self.current.store(Arc::clone(&parsed));
+        // `send_replace` (not `send`) — it unconditionally overwrites
+        // the stored watch value, so a late `subscribe()` after the
+        // last receiver was dropped still observes the newest
+        // value. `send` would return SendError and leave the stale
+        // initial value in the channel.
+        self.tx.send_replace(parsed);
         Ok(())
+    }
+
+    /// Subscribe to configuration changes.
+    ///
+    /// The returned [`watch::Receiver`] sees the current value
+    /// immediately via [`watch::Receiver::borrow`]; each successful
+    /// [`Self::reload`] wakes `.changed().await`. Failed reloads
+    /// don't wake subscribers — callers only ever observe values that
+    /// are also stored in [`Self::get`].
+    #[must_use]
+    pub fn subscribe(&self) -> watch::Receiver<Arc<C>> {
+        self.tx.subscribe()
     }
 }
 
 /// Retained copies of the sources the builder registered, used by
 /// [`Config::reload`] to re-parse on demand.
 #[derive(Default)]
-struct Sources {
+pub(crate) struct Sources {
     embedded: Vec<&'static str>,
-    files: Vec<PathBuf>,
+    pub(crate) files: Vec<PathBuf>,
     envs: Vec<String>,
 }
 
@@ -188,9 +232,11 @@ where
     /// Finalise construction: parse all layers and wrap the result in
     /// a [`Config`].
     pub fn build(self) -> Result<Config<C>, ConfigError> {
-        let parsed = self.sources.parse::<C>()?;
+        let parsed = Arc::new(self.sources.parse::<C>()?);
+        let (tx, _rx) = watch::channel(Arc::clone(&parsed));
         Ok(Config {
-            current: Arc::new(ArcSwap::from_pointee(parsed)),
+            current: Arc::new(ArcSwap::from(parsed)),
+            tx: Arc::new(tx),
             sources: Arc::new(self.sources),
         })
     }

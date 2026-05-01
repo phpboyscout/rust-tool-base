@@ -17,8 +17,8 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.1.1" }
-rtb-error = { path = "../rtb-error", version = "0.1.1" }
+rtb-app = { path = "../rtb-app", version = "0.2.0" }
+rtb-error = { path = "../rtb-error", version = "0.2.0" }
 genai = { workspace = true }
 async-openai = { workspace = true }
 reqwest = { workspace = true }

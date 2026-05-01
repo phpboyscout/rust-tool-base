@@ -16,6 +16,20 @@ keywords.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = []
+# Enables HttpSink + OtlpSink (gRPC + HTTP/protobuf transports).
+# Pulls in reqwest, url, secrecy, and the opentelemetry stack.
+remote-sinks = [
+    "dep:reqwest",
+    "dep:url",
+    "dep:secrecy",
+    "dep:opentelemetry",
+    "dep:opentelemetry_sdk",
+    "dep:opentelemetry-otlp",
+    "dep:tonic",
+]
+
 [dependencies]
 machine-uid = { workspace = true }
 sha2 = { workspace = true }
@@ -27,10 +41,19 @@ thiserror = { workspace = true }
 miette = { workspace = true }
 time = { workspace = true }
 uuid = { workspace = true }
-# v0.2 will add: reqwest (HttpSink), opentelemetry* (OtlpSink),
-# tracing + tracing-opentelemetry.
+rtb-redact = { path = "../rtb-redact", version = "0.2.0" }
+
+# Optional — gated on the `remote-sinks` feature.
+reqwest = { workspace = true, optional = true }
+url = { workspace = true, optional = true }
+secrecy = { workspace = true, optional = true }
+opentelemetry = { workspace = true, optional = true }
+opentelemetry_sdk = { workspace = true, optional = true }
+opentelemetry-otlp = { workspace = true, optional = true }
+tonic = { workspace = true, optional = true }
 
 [dev-dependencies]
 cucumber = { workspace = true }
 insta = { workspace = true }
 tempfile = "3"
+wiremock = { workspace = true }

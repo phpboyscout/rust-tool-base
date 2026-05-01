@@ -14,6 +14,121 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 
 Nothing yet.
 
+## [0.2.0] — 2026-05-01
+
+The "v0.2 mandatory crates" release. Four new shipped crates plus
+two extensions to existing crates, all behind opt-in features
+where they introduce dep weight. CLI dispatch wired for the two
+v0.2 commands that previously shipped as discoverability shims.
+
+### Added — new shipped crates
+
+- **`rtb-redact`** — free-form secret redaction helper.
+  `redact::string(input)` strips URL userinfo, common credential
+  query parameters, `Authorization` header values, well-known
+  provider prefixes (`sk-`, `ghp_`, `AIza`, `AKIA`, Slack,
+  `sk-ant-…`), and very long opaque tokens. Conservative by
+  design — false positives preferred over a leak.
+- **`rtb-vcs`** v0.1 release-provider slice.
+  `ReleaseProvider` trait + `ReleaseSourceConfig` enum + six
+  built-in backends (GitHub / GitLab / Bitbucket / Gitea /
+  Codeberg / Direct). Streaming asset downloads via reqwest +
+  tokio `AsyncRead`. Rate-limit-aware error mapping. Backends
+  registered via `linkme::distributed_slice` so downstream tools
+  can plug in custom ones. **The git-operations slice
+  (`Repo` type, gix/git2) remains targeted for v0.5** — see the
+  v0.2 scope addendum.
+- **`rtb-update`** — self-update with Ed25519 signature
+  verification, atomic-swap via `self-replace`, dry-run + force
+  modes, progress callbacks, `Updater` typestate builder. Uses
+  `rtb-vcs` to fetch the configured release source.
+- **`rtb-docs`** — `DocsBrowser` two-pane ratatui TUI,
+  `DocsServer` loopback HTTP server (axum 0.8), tantivy
+  full-text + fuzzy-title search, markdown rendering via
+  `tui-markdown` + `pulldown-cmark`. AI Q&A trait seam gated on
+  the `ai` Cargo feature (real impl ships with rtb-ai v0.3).
+
+### Added — extensions to v0.1 crates
+
+- **`rtb-config`**:
+  - `Config::subscribe()` returns a `tokio::sync::watch::Receiver`
+    that wakes on every successful `reload()`. Always-on
+    (`tokio::sync::watch` is already in the dep graph).
+  - `Config::watch_files()` behind the new `hot-reload` Cargo
+    feature: a debounced (250ms) background watcher that calls
+    `reload()` on filesystem change and returns a `WatchHandle`
+    whose `Drop` stops the worker.
+  - `ConfigError::Watch(String)` additive variant.
+- **`rtb-telemetry`**:
+  - `Event` gains optional `args` and `err_msg` fields; both run
+    through `rtb_redact::string` automatically inside every
+    out-of-process sink (see `Event::redacted`).
+  - New `HttpSink` and `OtlpSink` behind the `remote-sinks`
+    Cargo feature. `HttpSink` POSTs JSON; `OtlpSink` exports
+    OTLP/gRPC or OTLP/HTTP-protobuf depending on the endpoint
+    scheme. Severity is derived from `err_msg.is_some()` so
+    downstream alerting can filter without post-processing.
+    `TelemetryError::Http` and `TelemetryError::Otlp` additive
+    variants.
+
+### Added — CLI dispatch (post-v0.2 follow-ups, also in 0.2.0)
+
+- **`docs`** subcommand:
+  `docs list` / `docs show <path> [--format plain|html]` /
+  `docs browse` (full TUI event loop) /
+  `docs serve [--bind addr]` / `docs ask` (errors when the `ai`
+  feature is off).
+- **`update`** subcommand:
+  `update check` (default) /
+  `update run [--target] [--force] [--include-prereleases] [--dry-run] [--progress]`.
+- **`Command::subcommand_passthrough(&self) -> bool`** —
+  default-method addition on `rtb_app::command::Command`. When
+  `true`, `rtb-cli`'s top-level clap parser captures every arg
+  after `<name>` verbatim so the command's own clap subtree owns
+  parsing/help/error rendering. Backwards-compatible — existing
+  `Command` impls inherit the `false` default unchanged.
+- **`UpdaterBuilder::cache_dir(...)`** — staging-dir override
+  for tools honouring a `--cache-dir` flag (and to isolate
+  parallel test processes).
+
+### Changed
+
+- **`rtb-vcs::github`** consolidated onto the shared
+  `rtb_vcs::http` helpers — `check_status` shrinks to a
+  four-line shim around `http::map_status_to_error` that
+  preserves GitHub's `403 + X-RateLimit-Remaining: 0`
+  rate-limit hint. Same wire behaviour, less duplicated code.
+- **`opentelemetry-otlp` workspace dep** moved to
+  `default-features = false` with an explicit feature set
+  (`grpc-tonic` + `http-proto` + `reqwest-client` + `logs` +
+  `trace`) so OTLP's HTTP transport actually picks up a client.
+
+### Fixed
+
+- **`rtb-update` test cache races** — every test that drives
+  `Updater::run` now passes a per-test `tempfile::TempDir` via
+  the new `UpdaterBuilder::cache_dir(...)`. Resolves the
+  intermittent `t13_self_test_failed` / `t14_dry_run_does_not_swap`
+  flakes seen on prior PRs (every test wrote into the shared
+  `<project-cache>/widget/update/v1.2.3/` path under nextest's
+  one-process-per-test execution).
+- **`rtb-config::reload`** uses `watch::Sender::send_replace`
+  (not `send`) so a late `subscribe()` after the last receiver
+  was dropped still observes the newest value.
+
+### Known issues / deferred
+
+- `rtb-app::ReleaseSource` only carries `Github` / `Gitlab` /
+  `Direct` variants. The full six-variant expansion to match
+  `rtb-vcs::ReleaseSourceConfig` (Bitbucket / Gitea / Codeberg)
+  is queued for a future release; `update`'s mapper errors
+  cleanly on unmapped variants.
+- `update rollback` and `--channel` deferred — both need new
+  metadata or `self-replace` features that aren't in the v0.2
+  surface.
+- PAT auth via `rtb-credentials` lands with rtb-ai's
+  credential-resolution work in v0.3.
+
 ## [0.1.1] — 2026-04-23
 
 Housekeeping release. No behavioural changes to shipped crates.
@@ -158,6 +273,7 @@ example.
 See `docs/development/specs/rust-tool-base.md` §16 for the full
 roadmap.
 
-[Unreleased]: https://github.com/phpboyscout/rust-tool-base/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/phpboyscout/rust-tool-base/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/phpboyscout/rust-tool-base/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/phpboyscout/rust-tool-base/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/phpboyscout/rust-tool-base/releases/tag/v0.1.0

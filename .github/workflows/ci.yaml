@@ -56,6 +56,21 @@ jobs:
       - if: runner.os != 'Linux'
         run: cargo nextest run --workspace
 
+  integration-tests:
+    # Runs crates gated behind `--features integration`. These require
+    # Docker (via testcontainers) and therefore only run on Linux where
+    # GitHub Actions provides a Docker daemon out of the box. Gitea
+    # container startup is ~5–10s so we lightly cache compiled deps.
+    name: integration-tests (linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@nextest
+      - run: sudo apt-get update && sudo apt-get install -y libdbus-1-dev pkg-config
+      - run: cargo nextest run -p rtb-vcs --features integration
+
   deny:
     name: cargo-deny
     runs-on: ubuntu-latest

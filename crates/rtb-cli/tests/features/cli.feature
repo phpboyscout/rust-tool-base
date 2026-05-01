@@ -18,10 +18,10 @@ Feature: rtb-cli — application scaffolding and built-in commands
     When I dispatch "update"
     Then the result is an Err
 
-  Scenario: S6 — Update placeholder returns FeatureDisabled
-    Given a basic Application
-    When I dispatch "update"
-    Then the result is an Err mentioning "not compiled in"
+  # S6 — retired: the `update` FeatureDisabled stub lived in
+  # `rtb-cli` until `rtb-update` v0.1 shipped and took over the
+  # `update` command registration. The real update flow's
+  # acceptance tests live in `crates/rtb-update/tests/`.
 
   Scenario: S7 — Init runs a registered initialiser
     Given a basic Application

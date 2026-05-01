@@ -16,14 +16,26 @@ keywords.workspace = true
 [lints]
 workspace = true
 
+[features]
+default = []
+# Enables `Config::watch_files()` — background file watcher that
+# calls `reload()` on debounced change events.
+hot-reload = ["dep:notify", "dep:notify-debouncer-full"]
+
 [dependencies]
 figment = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 miette = { workspace = true }
 arc-swap = { workspace = true }
-# v0.2 (hot reload + schema export) will add: notify, notify-debouncer-full,
-# schemars. They remain in the workspace dep pool, unused until then.
+# `tokio::sync::watch` powers `Config::subscribe()`. The workspace
+# dep already enables `full`; narrowing per-crate is a no-op under
+# cargo's additive-features model, so just inherit.
+tokio = { workspace = true }
+# Gated on `hot-reload`.
+notify = { workspace = true, optional = true }
+notify-debouncer-full = { workspace = true, optional = true }
+# Schema export (planned) will add: schemars.
 
 [dev-dependencies]
 cucumber = { workspace = true }

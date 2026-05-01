@@ -1,0 +1,15 @@
+# nextest configuration.
+# https://nexte.st/book/configuration.html
+
+# Serialise the Gitea testcontainers tests: five tests each spin up a
+# fresh `gitea/gitea:1.24` container, and letting them race the Docker
+# daemon in parallel on CI runners blows through testcontainers-rs's
+# 60-second default startup timeout (`WaitFor::message_on_stderr`),
+# flaking `integration-tests (linux)`, `test (ubuntu-latest)`, and
+# `coverage`. One at a time costs ~5×30s of wall-clock but is reliable.
+[test-groups]
+gitea = { max-threads = 1 }
+
+[[profile.default.overrides]]
+filter = 'package(rtb-vcs) and binary(gitea_integration)'
+test-group = 'gitea'

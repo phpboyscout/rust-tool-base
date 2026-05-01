@@ -74,6 +74,34 @@ pub struct ToolMetadata {
     #[serde(default)]
     #[builder(default)]
     pub help: HelpChannel,
+
+    /// Ed25519 public keys trusted for verifying release-asset
+    /// signatures. Multiple keys enable rotation without breaking
+    /// already-deployed binaries — a release signed by a rotated-in
+    /// key verifies against any binary whose trusted list includes
+    /// that key. Empty means `rtb-update` refuses to run (see
+    /// `UpdateError::NoPublicKey`). Not serialised — keys are
+    /// compile-time constants, not config-file values.
+    #[serde(skip)]
+    #[builder(default)]
+    pub update_public_keys: Vec<[u8; 32]>,
+
+    /// Optional asset name listing SHA-256 checksums for this
+    /// release. `rtb-update` downloads it alongside the binary and
+    /// cross-checks the binary's hash before swap. When `None`,
+    /// signature verification is the only integrity gate.
+    #[serde(skip)]
+    pub update_checksums_asset: Option<&'static str>,
+
+    /// Asset-name template `rtb-update` uses to select the right
+    /// artefact for the running host. Default:
+    /// `{name}-{version}-{target}{ext}`. Placeholders:
+    /// `{name}` → [`ToolMetadata::name`], `{version}` → release tag
+    /// (leading `v` stripped), `{target}` → Rust host triple,
+    /// `{ext}` → `.tar.gz` on Unix / `.zip` on Windows. Tools with
+    /// a different naming convention set this explicitly.
+    #[serde(skip)]
+    pub update_asset_pattern: Option<&'static str>,
 }
 
 /// User-support channel advertised in error output.

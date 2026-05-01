@@ -1,6 +1,6 @@
 [package]
 name = "rtb-vcs"
-description = "Rust Tool Base — Git, GitHub, and GitLab abstractions."
+description = "Rust Tool Base — release-provider abstractions and backends (GitHub, GitLab, Bitbucket, Gitea, Codeberg, Direct)."
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -16,16 +16,73 @@ keywords.workspace = true
 [lints]
 workspace = true
 
+[features]
+# Built-in backends are feature-gated so a downstream tool that only
+# targets one provider doesn't pay the compile-cost of the others.
+# GitHub is default-on; the other five become default-on as their
+# implementations land.
+default = ["github", "gitlab", "gitea", "codeberg", "direct", "bitbucket"]
+# Each backend is feature-gated so a downstream tool that only targets
+# one provider can trim the compile-cost of the others.
+github = ["_http"]
+gitlab = ["_http"]
+gitea = ["_http"]
+# Codeberg piggybacks on the gitea backend but exposes its own
+# distinct `source_type: codeberg` registration with the host hard-
+# coded to `codeberg.org`.
+codeberg = ["gitea"]
+direct = ["_http"]
+bitbucket = ["_http"]
+# Enables the testcontainers-backed integration-tests gated with
+# `#[cfg(feature = "integration")]`. Not default-on: requires Docker.
+integration = []
+# Internal feature — pulls in the HTTP-client deps any backend needs.
+# Not for direct use by downstream tools.
+_http = ["dep:reqwest", "dep:serde_json", "dep:bytes", "dep:futures-util", "dep:tokio-util"]
+
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.1.1" }
-rtb-error = { path = "../rtb-error", version = "0.1.1" }
-gix = { workspace = true }
-octocrab = { workspace = true }
-gitlab = { workspace = true }
-reqwest = { workspace = true }
+rtb-app = { path = "../rtb-app", version = "0.2.0" }
+rtb-error = { path = "../rtb-error", version = "0.2.0" }
+
+# Async + trait plumbing
 tokio = { workspace = true }
 async-trait = { workspace = true }
+
+# Error type
 miette = { workspace = true }
 thiserror = { workspace = true }
-tracing = { workspace = true }
+
+# Config types
+serde = { workspace = true }
+
+# Value types
+semver = { workspace = true }
+time = { workspace = true }
+
+# Secrets — providers accept an optional bearer token
 secrecy = { workspace = true }
+
+# Registry (linkme-backed distributed slice of provider factories)
+linkme = { workspace = true }
+
+# Structured logging at the trait layer
+tracing = { workspace = true }
+
+# Backend HTTP — optional, feature-gated per backend.
+reqwest = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+bytes = { version = "1", optional = true }
+futures-util = { version = "0.3", optional = true }
+# `io` feature adds `StreamReader`, which adapts `Stream<Item = Result<Bytes>>`
+# into `AsyncRead` for streaming asset downloads.
+tokio-util = { version = "0.7", features = ["io"], optional = true }
+
+[dev-dependencies]
+cucumber = { workspace = true }
+serde_yaml = { workspace = true }
+serde_json = { workspace = true }
+# `multipart` is only used by the testcontainers Gitea integration test
+# to upload an asset via the real Gitea API.
+reqwest = { workspace = true, features = ["multipart"] }
+wiremock = { workspace = true }
+testcontainers = { workspace = true }

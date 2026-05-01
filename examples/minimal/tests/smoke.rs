@@ -12,7 +12,6 @@
 #![allow(missing_docs)]
 
 use assert_cmd::Command;
-use predicates::prelude::*;
 use predicates::str;
 
 /// Run the built `minimal` binary with the given args and return the
@@ -69,15 +68,46 @@ fn unknown_subcommand_fails() {
     bin().arg("definitely-not-a-command").assert().failure();
 }
 
-// --- Contract: the `update` stub returns FeatureDisabled -----------
+// --- Contract: the `update` command is discoverable ----------------
 
 #[test]
-fn update_stub_reports_feature_disabled() {
-    // The rtb-cli stub for `update` — it reports via the miette
-    // diagnostic pipeline, which writes to stderr.
-    bin()
-        .arg("update")
-        .assert()
-        .failure()
-        .stderr(str::contains("update").and(str::contains("not compiled in")));
+fn update_help_lists_subcommands() {
+    let output = bin().args(["update", "--help"]).output().expect("update --help");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for expected in ["check", "run"] {
+        assert!(
+            stdout.contains(expected),
+            "update --help should mention {expected}; got:\n{stdout}",
+        );
+    }
+}
+
+#[test]
+fn update_check_errors_when_no_release_source() {
+    // The minimal example doesn't configure `release_source` on
+    // ToolMetadata, so `update check` should surface a clear error
+    // rather than panic. (Default subcommand for `update` is
+    // `check`; an arg-less invocation hits the same path.)
+    bin().arg("update").assert().failure();
+}
+
+// --- Contract: `docs --help` lists every subcommand ------------------
+
+#[test]
+fn docs_help_lists_subcommands() {
+    let output = bin().args(["docs", "--help"]).output().expect("docs --help");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for expected in ["list", "show", "browse", "serve", "ask"] {
+        assert!(stdout.contains(expected), "docs --help should mention {expected}; got:\n{stdout}",);
+    }
+}
+
+// --- Contract: `docs list` errs cleanly when no doc tree is shipped --
+
+#[test]
+fn docs_list_errors_when_no_assets() {
+    // The minimal example doesn't ship a `docs/` asset overlay, so the
+    // loader surfaces `RootMissing("docs")`. The CLI should report
+    // that as a non-zero exit, not panic or print a stack trace.
+    bin().args(["docs", "list"]).assert().failure();
 }
