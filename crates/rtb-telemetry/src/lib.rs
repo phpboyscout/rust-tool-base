@@ -19,8 +19,8 @@
 //!
 //! - Always available: [`NoopSink`] (always-Ok drop), [`MemorySink`]
 //!   (test fixture), [`FileSink`] (newline-delimited JSON on disk).
-//! - Behind the `remote-sinks` Cargo feature: [`HttpSink`] (JSON
-//!   POST to an HTTPS endpoint) and [`OtlpSink`] (OTLP/gRPC or
+//! - Behind the `remote-sinks` Cargo feature: `HttpSink` (JSON
+//!   POST to an HTTPS endpoint) and `OtlpSink` (OTLP/gRPC or
 //!   OTLP/HTTP export). Both call [`Event::redacted`] before
 //!   serialisation.
 //!

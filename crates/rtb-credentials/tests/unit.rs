@@ -237,3 +237,16 @@ async fn t12_keyring_store_missing_is_not_found() {
         other => panic!("expected NotFound or Keychain, got {other:?}"),
     }
 }
+
+// ---------------------------------------------------------------------
+// T13 — Resolver::with_platform_default builds successfully
+// ---------------------------------------------------------------------
+
+#[test]
+fn t13_resolver_with_platform_default_builds() {
+    // The constructor is infallible — we just confirm it produces a
+    // usable `Resolver` without panicking. Actual keyring-backed
+    // round-trip is covered by T12.
+    let _ = rtb_credentials::Resolver::with_platform_default();
+    let _: rtb_credentials::Resolver = rtb_credentials::Resolver::default();
+}

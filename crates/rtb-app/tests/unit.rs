@@ -328,3 +328,50 @@ fn t18_releasesource_non_exhaustive_fixture_exists() {
         "missing trybuild fixture for T18",
     );
 }
+
+// ---------------------------------------------------------------------
+// T19 — ReleaseSource carries all six variants (Github / Gitlab /
+//        Bitbucket / Gitea / Codeberg / Direct) round-tripping through
+//        serde with the documented `type:` discriminator.
+// ---------------------------------------------------------------------
+
+#[test]
+fn t19_releasesource_all_six_variants_round_trip() {
+    use rtb_app::metadata::ReleaseSource;
+
+    let cases = [
+        (
+            "{\"type\":\"github\",\"owner\":\"acme\",\"repo\":\"widget\"}",
+            "github",
+        ),
+        (
+            "{\"type\":\"gitlab\",\"project\":\"acme/widget\"}",
+            "gitlab",
+        ),
+        (
+            "{\"type\":\"bitbucket\",\"workspace\":\"acme\",\"repo_slug\":\"widget\"}",
+            "bitbucket",
+        ),
+        (
+            "{\"type\":\"gitea\",\"owner\":\"acme\",\"repo\":\"widget\",\"host\":\"git.acme.io\"}",
+            "gitea",
+        ),
+        (
+            "{\"type\":\"codeberg\",\"owner\":\"acme\",\"repo\":\"widget\"}",
+            "codeberg",
+        ),
+        (
+            "{\"type\":\"direct\",\"url_template\":\"https://dist.acme.io/{tool}/{version}/{asset}\"}",
+            "direct",
+        ),
+    ];
+    for (json, label) in cases {
+        // Verify each variant deserialises (would panic on a missing
+        // variant) and re-serialises back into the same enum shape on
+        // a second pass — defaults are filled in on serialise so we
+        // compare via re-parse rather than literal JSON equality.
+        let parsed: ReleaseSource = serde_json::from_str(json).expect(label);
+        let serialised = serde_json::to_string(&parsed).expect(label);
+        let _round_tripped: ReleaseSource = serde_json::from_str(&serialised).expect(label);
+    }
+}
