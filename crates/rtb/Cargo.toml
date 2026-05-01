@@ -34,16 +34,16 @@ vcs = ["dep:rtb-vcs"]
 full = ["cli", "update", "docs", "mcp", "ai", "credentials", "tui", "telemetry", "vcs"]
 
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.1.1" }
-rtb-error = { path = "../rtb-error", version = "0.1.1" }
-rtb-config = { path = "../rtb-config", version = "0.1.1" }
-rtb-assets = { path = "../rtb-assets", version = "0.1.1" }
-rtb-cli = { path = "../rtb-cli", version = "0.1.1", optional = true }
-rtb-update = { path = "../rtb-update", version = "0.1.1", optional = true }
-rtb-docs = { path = "../rtb-docs", version = "0.1.1", optional = true }
-rtb-mcp = { path = "../rtb-mcp", version = "0.1.1", optional = true }
-rtb-ai = { path = "../rtb-ai", version = "0.1.1", optional = true }
-rtb-credentials = { path = "../rtb-credentials", version = "0.1.1", optional = true }
-rtb-tui = { path = "../rtb-tui", version = "0.1.1", optional = true }
-rtb-telemetry = { path = "../rtb-telemetry", version = "0.1.1", optional = true }
-rtb-vcs = { path = "../rtb-vcs", version = "0.1.1", optional = true }
+rtb-app = { path = "../rtb-app", version = "0.2.0" }
+rtb-error = { path = "../rtb-error", version = "0.2.0" }
+rtb-config = { path = "../rtb-config", version = "0.2.0" }
+rtb-assets = { path = "../rtb-assets", version = "0.2.0" }
+rtb-cli = { path = "../rtb-cli", version = "0.2.0", optional = true }
+rtb-update = { path = "../rtb-update", version = "0.2.0", optional = true }
+rtb-docs = { path = "../rtb-docs", version = "0.2.0", optional = true }
+rtb-mcp = { path = "../rtb-mcp", version = "0.2.0", optional = true }
+rtb-ai = { path = "../rtb-ai", version = "0.2.0", optional = true }
+rtb-credentials = { path = "../rtb-credentials", version = "0.2.0", optional = true }
+rtb-tui = { path = "../rtb-tui", version = "0.2.0", optional = true }
+rtb-telemetry = { path = "../rtb-telemetry", version = "0.2.0", optional = true }
+rtb-vcs = { path = "../rtb-vcs", version = "0.2.0", optional = true }
