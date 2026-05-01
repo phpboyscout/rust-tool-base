@@ -101,6 +101,19 @@ pub struct ToolMetadata {
     #[serde(default)]
     pub release_source: Option<ReleaseSource>,
 
+    /// Optional credential reference for the release source. Resolved
+    /// at update time via `rtb_credentials::Resolver`. Public repos
+    /// don't need it; private repos require this OR a fallback env
+    /// var the resolver knows about.
+    ///
+    /// Deserialised from config files but never serialised back —
+    /// `CredentialRef` contains a `SecretString` literal that should
+    /// not round-trip through `Serialize` (the `secrecy` crate
+    /// removed the `Serialize` impl on purpose, mirroring the
+    /// "secrets don't cross untyped boundaries" rule).
+    #[serde(default, skip_serializing)]
+    pub release_credential: Option<rtb_credentials::CredentialRef>,
+
     /// Support channel advertised in error diagnostic footers.
     #[serde(default)]
     #[builder(default)]

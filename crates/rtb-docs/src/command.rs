@@ -84,7 +84,7 @@ impl Command for DocsCmd {
             DocsSub::Show(opts) => run_show(&app, &opts),
             DocsSub::Browse(opts) => run_browse(&app, &opts),
             DocsSub::Serve(opts) => run_serve(app, opts).await,
-            DocsSub::Ask(opts) => run_ask(&app, &opts),
+            DocsSub::Ask(opts) => run_ask(&app, &opts).await,
         }
     }
 }
@@ -211,11 +211,57 @@ async fn run_serve(app: App, opts: ServeOpts) -> miette::Result<()> {
     }
 }
 
-fn run_ask(_app: &App, _opts: &AskOpts) -> miette::Result<()> {
+#[cfg(not(feature = "ai"))]
+#[allow(clippy::unused_async)] // signature parity with the `ai` build.
+async fn run_ask(_app: &App, _opts: &AskOpts) -> miette::Result<()> {
     // The trait seam lives in `crate::ai` behind the `ai` feature.
     // The CLI surface stays unconditional so users discover the
     // command; when the feature is off, fail with a clear pointer.
     Err(crate::error::DocsError::AiDisabled.into())
+}
+
+#[cfg(feature = "ai")]
+async fn run_ask(app: &App, opts: &AskOpts) -> miette::Result<()> {
+    use crate::ai::AiAnswerStream;
+    use futures_util::StreamExt as _;
+    use std::io::Write as _;
+
+    if opts.question.is_empty() {
+        return Err(miette!("docs ask: question is required"));
+    }
+    let question = opts.question.join(" ");
+
+    // Build the doc-tree context: every page's plain-text body
+    // concatenated with its title. Cheap on small trees; v0.3.x can
+    // bring in retrieval + ranking when the corpus grows past a
+    // sensible context window.
+    let (index, pages) = load_docs(&app.assets, "docs").into_diagnostic()?;
+    let mut context = String::with_capacity(8 * 1024);
+    {
+        use std::fmt::Write as _;
+        let _ = writeln!(context, "# {}\n", index.title);
+        for section in &index.sections {
+            for entry in &section.pages {
+                if let Some(body) = pages.get(&entry.path) {
+                    let _ = writeln!(context, "## {} ({})\n", entry.title, entry.path);
+                    context.push_str(&crate::render::to_plain_text(body));
+                    context.push_str("\n\n");
+                }
+            }
+        }
+    }
+
+    let provider = crate::ai::default_answer_stream(app)?;
+    let mut stream = provider.ask(&context, &question).await.into_diagnostic()?;
+    while let Some(token) = stream.next().await {
+        // Re-lock per token: `StdoutLock` isn't `Send` across `await`,
+        // and we want each token visible immediately anyway.
+        let mut stdout = std::io::stdout().lock();
+        let _ = stdout.write_all(token.as_bytes());
+        let _ = stdout.flush();
+    }
+    println!();
+    Ok(())
 }
 
 // ---------------------------------------------------------------------
