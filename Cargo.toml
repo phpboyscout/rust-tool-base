@@ -166,7 +166,7 @@ tempfile = "3"
 base64 = "0.22"
 predicates = "3"
 mockall = "0.13"
-jsonschema = "0.31"
+jsonschema = "0.46"
 minijinja = "2"
 json-patch = "3"
 
