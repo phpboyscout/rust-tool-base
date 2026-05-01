@@ -19,16 +19,39 @@ workspace = true
 [dependencies]
 rtb-app = { path = "../rtb-app", version = "0.2.0" }
 rtb-error = { path = "../rtb-error", version = "0.2.0" }
+rtb-redact = { path = "../rtb-redact", version = "0.2.0" }
+rtb-credentials = { path = "../rtb-credentials", version = "0.2.0" }
+
+# Multi-provider chat client — covers OpenAI / Gemini / Ollama /
+# OpenAI-compatible endpoints.
 genai = { workspace = true }
-async-openai = { workspace = true }
+
+# Direct Anthropic Messages API path (cache, thinking, citations) +
+# the base HTTP client for streaming/extracting bytes.
 reqwest = { workspace = true }
+url = { workspace = true }
+
+# Async + stream plumbing.
 tokio = { workspace = true }
 async-trait = { workspace = true }
+futures-util = { workspace = true }
+bytes = { workspace = true }
+
+# Serde + structured-output validation.
 serde = { workspace = true }
 serde_json = { workspace = true }
 schemars = { workspace = true }
 jsonschema = { workspace = true }
+
+# Errors + diagnostics.
 miette = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+
+# Secrets — `Config::api_key` is `SecretString` end-to-end.
 secrecy = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+wiremock = { workspace = true }
+serde = { workspace = true, features = ["derive"] }

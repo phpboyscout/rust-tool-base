@@ -135,7 +135,7 @@ struct RunOpts {
 // ---------------------------------------------------------------------
 
 async fn run_check(app: &App) -> miette::Result<()> {
-    let provider = build_provider(app)?;
+    let provider = build_provider(app).await?;
     let updater = Updater::builder().app(app).provider(provider).build();
     match updater.check().await.into_diagnostic()? {
         CheckOutcome::UpToDate { current } => {
@@ -156,7 +156,7 @@ async fn run_check(app: &App) -> miette::Result<()> {
 }
 
 async fn run_run(app: &App, opts: RunOpts) -> miette::Result<()> {
-    let provider = build_provider(app)?;
+    let provider = build_provider(app).await?;
     let progress = if opts.progress { Some(progress_sink()) } else { None };
     let updater = Updater::builder().app(app).provider(provider).build();
     let outcome = updater
@@ -192,7 +192,7 @@ async fn run_run(app: &App, opts: RunOpts) -> miette::Result<()> {
 /// Build a [`ReleaseProvider`] from `app.metadata.release_source`.
 /// Matches each [`ReleaseSource`] variant to the corresponding
 /// [`ReleaseSourceConfig`] and dispatches via [`rtb_vcs::lookup`].
-fn build_provider(app: &App) -> miette::Result<Arc<dyn ReleaseProvider>> {
+async fn build_provider(app: &App) -> miette::Result<Arc<dyn ReleaseProvider>> {
     let source = app
         .metadata
         .release_source
@@ -206,10 +206,26 @@ fn build_provider(app: &App) -> miette::Result<Arc<dyn ReleaseProvider>> {
             config.source_type(),
         )
     })?;
-    // PAT plumbing arrives with rtb-credentials integration in
-    // v0.3 — for now, run unauthenticated (rate-limited but
-    // correct for public releases).
-    factory(&config, None).into_diagnostic()
+    // Resolve PAT auth from `ToolMetadata::release_credential`. When
+    // unset, the provider runs unauthenticated (rate-limited but
+    // correct for public releases). When set, walk the precedence
+    // chain (env > keychain > literal > fallback_env) via the
+    // platform-default resolver — stops at the first hit.
+    let token = if let Some(cred) = app.metadata.release_credential.as_ref() {
+        let resolver = rtb_credentials::Resolver::with_platform_default();
+        match resolver.resolve(cred).await {
+            Ok(secret) => Some(secret),
+            // `NotFound` is non-fatal — the user may simply not have
+            // configured the credential yet for a public-only repo.
+            // Other errors (CI-rejected literal, keychain failure)
+            // are real and should surface.
+            Err(rtb_credentials::CredentialError::NotFound { .. }) => None,
+            Err(e) => return Err(miette!("update: credential resolve: {e}")),
+        }
+    } else {
+        None
+    };
+    factory(&config, token).into_diagnostic()
 }
 
 fn release_source_to_config(source: &ReleaseSource) -> miette::Result<ReleaseSourceConfig> {
