@@ -7,7 +7,7 @@ use secrecy::SecretString;
 
 use crate::error::CredentialError;
 use crate::reference::CredentialRef;
-use crate::store::CredentialStore;
+use crate::store::{CredentialStore, KeyringStore};
 
 /// Walks a [`CredentialRef`] through its resolution chain, returning
 /// the first successful hit. The chain order is deliberately fixed:
@@ -29,6 +29,14 @@ impl Resolver {
     #[must_use]
     pub fn new(keychain: Arc<dyn CredentialStore>) -> Self {
         Self { keychain }
+    }
+
+    /// Convenience: build a [`Resolver`] over [`KeyringStore::new()`]
+    /// — the platform-native default. Equivalent to
+    /// `Resolver::new(Arc::new(KeyringStore::new()))`.
+    #[must_use]
+    pub fn with_platform_default() -> Self {
+        Self::new(Arc::new(KeyringStore::new()))
     }
 
     /// Walk the chain and return the first hit.
@@ -69,6 +77,13 @@ impl Resolver {
         }
 
         Err(CredentialError::NotFound { name: diagnostic_name(cref) })
+    }
+}
+
+impl Default for Resolver {
+    /// Same as [`Resolver::with_platform_default`].
+    fn default() -> Self {
+        Self::with_platform_default()
     }
 }
 

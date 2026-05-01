@@ -213,7 +213,9 @@ fn build_provider(app: &App) -> miette::Result<Arc<dyn ReleaseProvider>> {
 }
 
 fn release_source_to_config(source: &ReleaseSource) -> miette::Result<ReleaseSourceConfig> {
-    use rtb_vcs::config::{DirectParams, GithubParams, GitlabParams};
+    use rtb_vcs::config::{
+        BitbucketParams, CodebergParams, DirectParams, GiteaParams, GithubParams, GitlabParams,
+    };
     match source {
         ReleaseSource::Github { owner, repo, host } => {
             Ok(ReleaseSourceConfig::Github(GithubParams {
@@ -245,6 +247,34 @@ fn release_source_to_config(source: &ReleaseSource) -> miette::Result<ReleaseSou
                 allow_insecure_base_url: false,
             }))
         }
+        ReleaseSource::Bitbucket { workspace, repo_slug, host } => {
+            Ok(ReleaseSourceConfig::Bitbucket(BitbucketParams {
+                host: host.clone(),
+                workspace: workspace.clone(),
+                repo_slug: repo_slug.clone(),
+                username: None,
+                private: false,
+                timeout_seconds: 30,
+                allow_insecure_base_url: false,
+            }))
+        }
+        ReleaseSource::Gitea { owner, repo, host } => Ok(ReleaseSourceConfig::Gitea(GiteaParams {
+            host: host.clone(),
+            owner: owner.clone(),
+            repo: repo.clone(),
+            private: false,
+            timeout_seconds: 30,
+            allow_insecure_base_url: false,
+        })),
+        ReleaseSource::Codeberg { owner, repo } => {
+            Ok(ReleaseSourceConfig::Codeberg(CodebergParams {
+                owner: owner.clone(),
+                repo: repo.clone(),
+                private: false,
+                timeout_seconds: 30,
+                allow_insecure_base_url: false,
+            }))
+        }
         ReleaseSource::Direct { url_template } => Ok(ReleaseSourceConfig::Direct(DirectParams {
             version_url: url_template.clone(),
             asset_url_template: url_template.clone(),
@@ -252,11 +282,10 @@ fn release_source_to_config(source: &ReleaseSource) -> miette::Result<ReleaseSou
             timeout_seconds: 30,
             allow_insecure_base_url: false,
         })),
-        // `ReleaseSource` is `#[non_exhaustive]`; future variants (e.g.
-        // Bitbucket / Gitea / Codeberg, planned per the v0.2 scope
-        // doc) need their own mappers added here.
+        // `ReleaseSource` is `#[non_exhaustive]`; defensive arm for
+        // any future variant added without updating this mapper.
         other => {
-            Err(miette!("update: release source {other:?} not yet wired through the update CLI",))
+            Err(miette!("update: release source {other:?} not yet wired through the update CLI"))
         }
     }
 }
