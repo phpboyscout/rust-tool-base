@@ -92,6 +92,11 @@ vfs = "0.12"
 reqwest = { version = "0.12", default-features = false, features = ["rustls-tls", "json", "stream", "gzip"] }
 url = "2"
 
+# Async byte-stream plumbing (used by rtb-ai's Anthropic SSE parser
+# and rtb-vcs's asset downloads).
+futures-util = "0.3"
+bytes = "1"
+
 # TUI
 ratatui = "0.30"
 crossterm = "0.28"

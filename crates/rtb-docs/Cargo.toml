@@ -17,16 +17,18 @@ keywords.workspace = true
 workspace = true
 
 [features]
-# `ai` gates the Q&A seam — downstream tools enable it when they also
-# link `rtb-ai` (v0.3+). No-op without the trait being implemented.
+# `ai` gates the Q&A seam. The default implementation is backed by
+# `rtb-ai`; tools that want a different implementation can leave the
+# feature off and supply their own `AiAnswerStream`.
 default = []
-ai = []
+ai = ["dep:rtb-ai", "dep:futures-util", "dep:secrecy"]
 
 [dependencies]
 rtb-app = { path = "../rtb-app", version = "0.2.0" }
 rtb-error = { path = "../rtb-error", version = "0.2.0" }
 rtb-assets = { path = "../rtb-assets", version = "0.2.0" }
 rtb-cli = { path = "../rtb-cli", version = "0.2.0" }
+rtb-ai = { path = "../rtb-ai", version = "0.2.0", optional = true }
 
 # TUI
 ratatui = { workspace = true }
@@ -70,6 +72,10 @@ clap = { workspace = true }
 # Stream adapters for the ai seam
 tokio-stream = "0.1"
 futures-core = "0.3"
+# Pulled in by the `ai` feature — only the `AiClient`-backed seam
+# uses these. Optional to keep default builds lean.
+futures-util = { workspace = true, optional = true }
+secrecy = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
