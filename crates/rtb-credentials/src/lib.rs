@@ -43,11 +43,13 @@
 
 #![forbid(unsafe_code)]
 
+pub mod bearing;
 pub mod error;
 pub mod reference;
 pub mod resolver;
 pub mod store;
 
+pub use bearing::CredentialBearing;
 pub use error::CredentialError;
 pub use reference::{CredentialRef, KeychainRef};
 pub use resolver::Resolver;
