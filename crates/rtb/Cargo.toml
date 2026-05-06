@@ -17,7 +17,7 @@ keywords.workspace = true
 workspace = true
 
 [features]
-default = ["cli", "update", "docs", "mcp", "credentials"]
+default = ["cli", "update", "docs", "mcp", "credentials", "tui"]
 cli = ["dep:rtb-cli"]
 update = ["dep:rtb-update"]
 docs = ["dep:rtb-docs"]

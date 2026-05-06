@@ -4559,13 +4559,16 @@ dependencies = [
 name = "rtb-tui"
 version = "0.2.0"
 dependencies = [
+ "async-trait",
+ "bon",
  "console 0.15.11",
- "crossterm 0.28.1",
  "inquire",
  "miette",
- "owo-colors",
- "ratatui",
+ "serde",
+ "serde_json",
  "tabled",
+ "thiserror 2.0.18",
+ "tokio",
 ]
 
 [[package]]

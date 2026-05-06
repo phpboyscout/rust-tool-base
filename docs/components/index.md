@@ -26,6 +26,7 @@ crates, see the [Concepts](../concepts/index.md) section.
 | [`rtb-telemetry`](rtb-telemetry.md) | Opt-in events with pluggable sinks + salted machine ID. | `TelemetryContext`, `TelemetrySink`, `Event` |
 | [`rtb-test-support`](rtb-test-support.md) | Sealed-trait test helper for constructing `App`. | `TestAppBuilder`, `TestWitness` |
 | [`rtb-mcp`](rtb-mcp.md) | MCP server — registered `Command`s as tools over `rmcp`. | `McpServer`, `Transport`, `McpError` |
+| [`rtb-tui`](rtb-tui.md) | Reusable TUI building blocks — `Wizard`, render helpers, TTY-aware `Spinner`. | `Wizard`, `WizardStep`, `Spinner`, `render_table`, `render_json` |
 
 ## v0.2+ — pending
 
@@ -40,7 +41,6 @@ component doc when it reaches v0.1. Roadmap lives in framework spec
 | `rtb-update` | v0.2 | Self-update via `rtb-vcs` + `self-replace` + Ed25519 signature verification. |
 | `rtb-docs` | v0.2 | `ratatui` docs browser + embedded-HTML `docs serve` for airgapped end-users + streaming AI Q&A seam. |
 | `rtb-ai` | v0.3 | `genai` multi-provider + Anthropic-direct for cache/agents. |
-| `rtb-tui` | v0.4 | `Wizard`, tables, spinners. |
 | `rtb-vcs` (git-ops slice) | v0.5 | `Repo` + `gix` / `git2` adapters; commit/diff/blame/clone. Extends the release slice shipped at v0.2. |
 | `rtb-cli-bin` | v0.6 | `rtb new`, `rtb generate`, `rtb regenerate` scaffolder. |
 

@@ -18,9 +18,15 @@ workspace = true
 
 [dependencies]
 inquire = { workspace = true }
-ratatui = { workspace = true }
-crossterm = { workspace = true }
 tabled = { workspace = true }
-owo-colors = { workspace = true }
 console = { workspace = true }
 miette = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+bon = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
