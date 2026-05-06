@@ -12,7 +12,28 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 
 ## [Unreleased]
 
-Nothing yet.
+### Added — `rtb-mcp` v0.1 (slice 2 of v0.3)
+
+- **`rtb-mcp`** flips from `McpStub` to a working MCP server. Walks
+  `BUILTIN_COMMANDS` for entries marked `mcp_exposed = true` and
+  registers each as an MCP tool whose `tools/call` invokes the
+  underlying `Command::run`. Stdio is the working transport; SSE
+  and streamable-HTTP variants are present on the `Transport` enum
+  but stubbed for v0.3.x.
+- **`mcp` CLI subcommand** — `mcp serve [--transport stdio|sse|http]
+  [--bind ADDR]` and `mcp list` (prints every exposed tool's name +
+  description + JSON schema, one JSON object per line).
+- **`Command::mcp_exposed`** + **`Command::mcp_input_schema`**
+  default trait methods on `rtb_app::command::Command`. Existing
+  impls inherit `false` / `None` defaults — no migration needed.
+- **`McpServer`** + **`McpError`** public types in `rtb-mcp`.
+  `McpServer::dispatch(name)` exposes the same dispatch path the
+  rmcp service loop uses, for unit-test reach.
+
+### Removed
+
+- **`McpStub`** in `rtb-cli::builtins` — superseded by the real
+  `McpCmd` registered from `rtb-mcp`.
 
 ## [0.2.0] — 2026-05-01
 

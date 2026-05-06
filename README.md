@@ -38,7 +38,10 @@ config, `tokio` structured concurrency).
   with a direct-`reqwest` path for Anthropic-only features (prompt caching,
   managed agents, extended thinking). Structured output validated with
   `jsonschema`.
-* **MCP** — official `rmcp` SDK; commands derive `McpTool` to self-register.
+* **MCP** — official `rmcp` SDK; commands opt in via
+  `Command::mcp_exposed = true` and surface their `clap::Args` schema
+  through `Command::mcp_input_schema`. `mcp serve` (stdio default) and
+  `mcp list` ship as built-in subcommands.
 * **TUI docs browser** — `ratatui` + `termimad`, with streaming AI Q&A.
 * **Credentials** — `keyring` wrapped in a `CredentialStore` trait;
   `secrecy::SecretString` end-to-end, zeroed on drop.

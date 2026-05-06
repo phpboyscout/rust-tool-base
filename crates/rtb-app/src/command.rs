@@ -93,6 +93,21 @@ pub trait Command: Send + Sync + 'static {
     fn subcommand_passthrough(&self) -> bool {
         false
     }
+
+    /// When `true`, this command is registered as an MCP tool by
+    /// `rtb_mcp::McpServer`. Defaults to `false` — additive trait
+    /// method, no impact on existing impls.
+    fn mcp_exposed(&self) -> bool {
+        false
+    }
+
+    /// Optional JSON Schema for the command's arguments — surfaced
+    /// to MCP clients in the tool listing. Default: `None`. Tool
+    /// authors with `clap::Args` structs typically derive this via
+    /// `serde_json::to_value(schemars::schema_for!(MyArgs))`.
+    fn mcp_input_schema(&self) -> Option<serde_json::Value> {
+        None
+    }
 }
 
 /// Link-time registry of [`Command`] factory functions.

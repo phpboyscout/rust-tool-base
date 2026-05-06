@@ -1,17 +1,38 @@
 //! MCP server exposing tool commands as Model Context Protocol tools.
 //!
-//! Wraps the official `rmcp` SDK. Each registered `rtb_cli::Command`
-//! can advertise itself as an MCP tool by implementing `McpTool`
-//! (derive macro, `schemars`-backed input schema). The `mcp`
-//! subcommand boots an `rmcp` server over stdio (default) or
-//! streamable HTTP.
+//! A thin layer over the official [`rmcp`] SDK. Every
+//! [`rtb_app::command::Command`] in [`rtb_app::command::BUILTIN_COMMANDS`]
+//! that returns `true` from `Command::mcp_exposed()` is registered as
+//! an MCP tool on server start. The tool's `tools/call` invocation
+//! runs the underlying `Command::run` against a clone of the host
+//! `App`.
 //!
-//! **Status:** stub awaiting its real v0.1 spec + implementation.
-//! Target milestone is **v0.3**; see the framework spec's Roadmap
-//! (§16) in `docs/development/specs/rust-tool-base.md`.
+//! # Quick start
+//!
+//! ```no_run
+//! use rtb_app::app::App;
+//! use rtb_mcp::{McpServer, Transport};
+//!
+//! # async fn run(app: App) -> Result<(), rtb_mcp::McpError> {
+//! McpServer::new(app, Transport::Stdio).serve().await
+//! # }
+//! ```
+//!
+//! See `docs/development/specs/2026-05-01-rtb-mcp-v0.1.md` for the
+//! authoritative contract.
 
-// Stub crate — remove `#![allow(missing_docs)]` when the real surface
-// is documented. See the framework spec Roadmap for the target version.
-#![allow(missing_docs)]
+// `deny` (not `forbid`) so the CLI-command module can allow
+// `unsafe_code` for its `linkme::distributed_slice` registration —
+// same rationale as `rtb-update` / `rtb-vcs`. No hand-rolled
+// `unsafe` blocks exist in this crate.
+#![deny(unsafe_code)]
 
-pub struct McpServer;
+mod command;
+mod error;
+mod server;
+mod transport;
+
+pub use command::McpCmd;
+pub use error::{McpError, Result};
+pub use server::McpServer;
+pub use transport::Transport;
