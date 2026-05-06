@@ -704,6 +704,7 @@ checksum = "d64e8af5551369d19cf50138de61f1c42074ab970f74e99be916646777f8fc87"
 dependencies = [
  "encode_unicode",
  "libc",
+ "unicode-width 0.2.0",
  "windows-sys 0.61.2",
 ]
 
@@ -4561,7 +4562,7 @@ version = "0.2.0"
 dependencies = [
  "async-trait",
  "bon",
- "console 0.15.11",
+ "console 0.16.3",
  "inquire",
  "miette",
  "serde",
@@ -4711,7 +4712,7 @@ dependencies = [
  "errno",
  "libc",
  "linux-raw-sys 0.4.15",
- "windows-sys 0.59.0",
+ "windows-sys 0.52.0",
 ]
 
 [[package]]
