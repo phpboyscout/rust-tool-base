@@ -17,6 +17,8 @@ disagree, the code is authoritative.
   `figment`, precedence rules, atomic reload.
 - **[Error diagnostics](error-diagnostics.md)** — `thiserror` +
   `miette`, tool-specific footer, the edge-rendering pipeline.
+- **[MCP exposure](mcp-exposure.md)** — how `Command::mcp_exposed`
+  surfaces a CLI command as an MCP tool.
 
 ## Planned (per roadmap)
 
@@ -25,7 +27,8 @@ disagree, the code is authoritative.
 - `telemetry-events.md` — with the OTLP sink in v0.2.
 - `credentials-resolution.md` — alongside `rtb-cli` credential
   subcommands.
-- `ai-and-mcp.md` — for v0.3.
+- `ai-providers.md` — covering `rtb-ai`'s multi-provider layout
+  alongside the streaming and structured-output paths.
 
 Until a concept page exists, the
 [per-crate spec](../development/specs/) is the authoritative source.

@@ -224,6 +224,21 @@ Opt-in: `Ai`, `Telemetry`, `Config`, `Changelog`.
 pub trait Command: Send + Sync + 'static {
     fn spec(&self) -> &CommandSpec;
     async fn run(&self, app: App) -> miette::Result<()>;
+
+    /// `true` → the outer clap parser passes every arg after `<name>`
+    /// straight to `run`. Commands that own their own clap subtree
+    /// (e.g. `docs`, `update`, `mcp`) opt in. Default `false`.
+    fn subcommand_passthrough(&self) -> bool { false }
+
+    /// `true` → registered as an MCP tool by `rtb_mcp::McpServer`.
+    /// Default `false`. See [MCP exposure](../concepts/mcp-exposure.md).
+    fn mcp_exposed(&self) -> bool { false }
+
+    /// JSON Schema for the command's arguments — surfaced to MCP
+    /// clients via `tools/list`. Default `None`. Authors with a
+    /// `clap::Args` struct typically derive this from
+    /// `serde_json::to_value(schemars::schema_for!(MyArgs))`.
+    fn mcp_input_schema(&self) -> Option<serde_json::Value> { None }
 }
 
 #[derive(Debug, Clone)]
@@ -236,7 +251,11 @@ pub struct CommandSpec {
 ```
 
 Every field on `CommandSpec` is `'static` — commands are compile-time
-entities. `feature: None` means unconditionally visible.
+entities. `feature: None` means unconditionally visible. The four
+default trait methods (`subcommand_passthrough`, `mcp_exposed`,
+`mcp_input_schema`, plus `run`/`spec` which are required) are
+additive: existing impls inherit safe defaults and don't need to
+change when new opt-ins are added.
 
 ### `BUILTIN_COMMANDS`
 
@@ -290,9 +309,8 @@ fn __register_my_cmd() -> Box<dyn Command> { Box::new(MyCommand) }
 For library-level replaceability, a downstream crate can override a
 built-in command by registering a `Command` with the same name. The
 deduplication in `Application::build` keeps the last entry in slice
-order — which matches the intuition that a real `update` command
-from the v0.2 `rtb-update` crate overrides `rtb-cli`'s stub of the
-same name.
+order — so a downstream tool can ship its own `version` (or any other
+built-in) and the framework's default falls away.
 
 ## API surface
 
@@ -305,6 +323,9 @@ same name.
 | `VersionInfo` | struct + fluent setters | 0.1.0 |
 | `Feature`, `Features`, `FeaturesBuilder` | enum + structs | 0.1.0 |
 | `Command` | async trait | 0.1.0 |
+| `Command::subcommand_passthrough` | default trait method | 0.2.0 |
+| `Command::mcp_exposed` | default trait method | 0.3.0 |
+| `Command::mcp_input_schema` | default trait method | 0.3.0 |
 | `CommandSpec` | struct | 0.1.0 |
 | `BUILTIN_COMMANDS` | `linkme` distributed slice | 0.1.0 |
 

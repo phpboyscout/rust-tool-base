@@ -227,10 +227,12 @@ pub trait Command: Send + Sync + 'static {
 }
 ```
 
-A `CommandSpec` describes flags, aliases, nesting, and optional MCP-tool
-metadata (`schemars::JsonSchema` input/output types). Downstream authors
-typically derive `Command` via a `#[rtb::command]` attribute macro that
-generates `spec()` from struct fields — see §12.
+A `CommandSpec` describes the static command surface: name, about, aliases,
+and the `Feature` it gates on. MCP-tool exposure is opt-in via the
+`Command::mcp_exposed` / `Command::mcp_input_schema` default trait methods
+(see [`rtb-mcp`](2026-05-01-rtb-mcp-v0.1.md)). Downstream authors will
+eventually derive `Command` via a `#[rtb::command]` attribute macro that
+generates `spec()` and the MCP hooks from struct fields — see §12.
 
 ---
 
@@ -371,13 +373,12 @@ attribute fills that role.
 
 ## 8. Built-in commands
 
-> **Status (as of v0.1):** `version`, `doctor`, `init`, `config show`
-> ship as real implementations. `update`, `docs`, `mcp` ship as
-> feature-gated **stubs** that return `Error::FeatureDisabled(...)` —
-> real implementations land with their respective crates
-> (`rtb-update` v0.2, `rtb-docs` v0.2, `rtb-mcp` v0.3). `changelog`
-> is not yet wired. `--output json` is deferred to v0.2. See §16 for
-> the full roadmap.
+> **Status (as of v0.3):** `version`, `doctor`, `init`, `config show`,
+> `update`, `docs`, and `mcp` all ship as real implementations.
+> `update` is registered by `rtb-update` (v0.2), `docs` by
+> `rtb-docs` (v0.2), and `mcp` by `rtb-mcp` (v0.3). `changelog`
+> is not yet wired. `--output json` is deferred. See §16 for the
+> roadmap.
 
 All built-ins are registered into `BUILTIN_COMMANDS` behind Cargo features
 and runtime-filtered by `Features`. Each supports `--output text|json`
@@ -418,9 +419,17 @@ and runtime-filtered by `Features`. Each supports `--output text|json`
 
 ### 8.5 `mcp`
 
-- Boots an `rmcp` server over stdio (default), SSE, or streamable HTTP.
-- Registered commands that opt in via `#[rtb::command(mcp)]` are exposed
-  as MCP tools with `schemars`-derived input schemas.
+- Boots an `rmcp` server over stdio (default). `Transport::Sse` and
+  `Transport::Http` variants are present on the API; full streamable-HTTP
+  wiring lands in v0.3.x.
+- Subcommands: `mcp serve [--transport stdio|sse|http] [--bind ADDR]`
+  and `mcp list` (prints every exposed tool's name + description +
+  JSON schema as one JSON object per line).
+- Per-command opt-in via the `Command::mcp_exposed` (default `false`)
+  and `Command::mcp_input_schema` (default `None`) trait methods on
+  `rtb_app::command::Command`.
+- See [`rtb-mcp` v0.1 spec](2026-05-01-rtb-mcp-v0.1.md) for the full
+  contract.
 
 ### 8.6 `doctor`
 
@@ -610,8 +619,24 @@ impl rtb::Command for Deploy {
   - `clap::Args` derive on the struct.
   - `CommandSpec` construction.
   - A `fn __rtb_register()` inserted into `BUILTIN_COMMANDS` via `linkme`.
-- `#[rtb::command(mcp)]` additionally derives `schemars::JsonSchema` and
-  exposes the command as an MCP tool.
+- `#[rtb::command(mcp)]` additionally derives `schemars::JsonSchema`,
+  overrides `Command::mcp_exposed` to `true`, and emits an
+  `mcp_input_schema` body that returns the derived JSON Schema.
+
+> **Status (as of v0.3):** the `#[rtb::command]` attribute macro is not
+> yet shipped — author commands by hand-implementing `Command` for
+> now. Until the macro lands, MCP-exposed commands implement
+> `mcp_exposed` / `mcp_input_schema` directly:
+>
+> ```rust
+> impl Command for Deploy {
+>     fn mcp_exposed(&self) -> bool { true }
+>     fn mcp_input_schema(&self) -> Option<serde_json::Value> {
+>         Some(serde_json::to_value(schemars::schema_for!(DeployArgs)).unwrap())
+>     }
+>     /* … */
+> }
+> ```
 
 ### 12.2 Error ergonomics
 
@@ -704,25 +729,18 @@ Minimum shippable scope:
   `rtb-assets`, `rtb-cli`, `rtb-credentials`, `rtb-telemetry`.
   151 acceptance criteria green. See `CHANGELOG.md` and
   `docs/development/specs/2026-04-22-*.md` for per-crate detail.
+- **0.2.0** (2026-05-01) — `rtb-redact`, `rtb-vcs` v0.1 (release
+  slice), `rtb-update` v0.1, `rtb-docs` v0.1, `rtb-config` hot-reload,
+  OTLP + HTTP JSON sinks in `rtb-telemetry`. `update`, `docs`, and
+  `mcp` stubs removed from `rtb-cli`. See
+  [`2026-04-23-v0.2-scope.md`](2026-04-23-v0.2-scope.md) for scope
+  rationale.
+- **0.3** — `rtb-ai` v0.1 (genai + Anthropic-direct for caching),
+  `rtb-mcp` v0.1 (`rmcp` SDK; commands self-register as MCP tools
+  via `Command::mcp_exposed`). Structured output via `schemars` +
+  `jsonschema`. See [`2026-05-01-v0.3-scope.md`](2026-05-01-v0.3-scope.md).
 
 ### Pending
-
-- **0.2** — `rtb-redact` (first; unblocks telemetry redaction),
-  `rtb-vcs` v0.1 (release-provider slice only: `ReleaseProvider`
-  trait + GitHub / GitLab / Bitbucket / Gitea / Codeberg / Direct
-  backends), `rtb-update` (self-update with signature verification,
-  consumes `rtb-vcs`), `rtb-docs` (ratatui + markdown + embedded-HTML
-  server for airgapped end-users),
-  `rtb-config::subscribe()` + hot-reload, OTLP sink in
-  `rtb-telemetry`, HTTP JSON sink in `rtb-telemetry`.
-  Remove the `update`/`docs`/`mcp` stubs from `rtb-cli`'s built-ins
-  as each real crate registers its own command. See
-  [`2026-04-23-v0.2-scope.md`](2026-04-23-v0.2-scope.md) for the
-  scope-refactor rationale (pulled `rtb-vcs` release slice forward
-  from v0.5 for GTB parity).
-- **0.3** — `rtb-ai` (genai + Anthropic-direct for caching/agents),
-  `rtb-mcp` (`rmcp` SDK). Structured output via `schemars` +
-  `jsonschema`.
 - **0.4** — `rtb-tui` (Wizard, tables, spinners), `rtb-cli`
   `credentials`/`telemetry`/`config-set` subcommands,
   `rtb-test-support` crate (replaces `App::for_testing`).
