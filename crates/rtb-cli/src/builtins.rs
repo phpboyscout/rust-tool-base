@@ -170,37 +170,8 @@ fn __register_config() -> Box<dyn Command> {
     Box::new(ConfigShowCmd)
 }
 
-// =====================================================================
-// Feature-disabled placeholder for mcp.
-//
-// The `update` and `docs` stubs have been removed — `rtb-update` and
-// `rtb-docs` register the real commands. Downstream tools that
-// disable the corresponding rtb features still get the stub's
-// behaviour (no command registered; clap reports "unknown
-// subcommand" if invoked).
-// =====================================================================
-
-/// Placeholder for the `mcp` subcommand.
-pub struct McpStub;
-
-#[async_trait]
-impl Command for McpStub {
-    fn spec(&self) -> &CommandSpec {
-        static SPEC: CommandSpec = CommandSpec {
-            name: "mcp",
-            about: "Expose commands via the Model Context Protocol",
-            aliases: &[],
-            feature: Some(Feature::Mcp),
-        };
-        &SPEC
-    }
-
-    async fn run(&self, _app: App) -> miette::Result<()> {
-        Err(rtb_error::Error::FeatureDisabled("mcp").into())
-    }
-}
-
-#[distributed_slice(BUILTIN_COMMANDS)]
-fn __register_mcp_stub() -> Box<dyn Command> {
-    Box::new(McpStub)
-}
+// The `update`, `docs`, and `mcp` stubs have been removed —
+// `rtb-update`, `rtb-docs`, and `rtb-mcp` register the real
+// commands. Downstream tools that disable the corresponding rtb
+// features still get the stub-equivalent behaviour: no command
+// registered, clap reports "unknown subcommand" if invoked.

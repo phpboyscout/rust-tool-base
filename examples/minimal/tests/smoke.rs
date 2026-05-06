@@ -111,3 +111,23 @@ fn docs_list_errors_when_no_assets() {
     // that as a non-zero exit, not panic or print a stack trace.
     bin().args(["docs", "list"]).assert().failure();
 }
+
+// --- Contract: `mcp --help` lists `serve` + `list` -------------------
+
+#[test]
+fn mcp_help_lists_subcommands() {
+    let output = bin().args(["mcp", "--help"]).output().expect("mcp --help");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for expected in ["serve", "list"] {
+        assert!(stdout.contains(expected), "mcp --help should mention {expected}; got:\n{stdout}");
+    }
+}
+
+// --- Contract: `mcp list` succeeds even with no exposed tools --------
+
+#[test]
+fn mcp_list_succeeds_with_no_exposed_tools() {
+    // The minimal example doesn't mark any command `mcp_exposed = true`,
+    // so `mcp list` should exit 0 with empty stdout — not error out.
+    bin().args(["mcp", "list"]).assert().success();
+}

@@ -21,9 +21,20 @@ rtb-app = { path = "../rtb-app", version = "0.2.0" }
 rtb-error = { path = "../rtb-error", version = "0.2.0" }
 rmcp = { workspace = true }
 tokio = { workspace = true }
+async-trait = { workspace = true }
+clap = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 schemars = { workspace = true }
 miette = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
+linkme = { workspace = true }
+tokio-util = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true }
+semver = { workspace = true }
+# `client` enables `rmcp`'s in-process MCP client used by the T9 +
+# S1 round-trip tests. `transport-io` is already on for the server.
+rmcp = { workspace = true, features = ["client"] }

@@ -172,17 +172,17 @@ runtime `Features` set.
 | `doctor` | `Doctor` | Runs `HEALTH_CHECKS`; exits non-zero if any `Fail`. |
 | `init` | `Init` | Iterates `INITIALISERS`; skips already-configured. |
 | `config` | `Config` (opt-in) | Shows the resolved typed config. |
-| `update` | `Update` | **Stub** returning `Error::FeatureDisabled("update")` — real impl ships with `rtb-update` v0.2. |
-| `docs` | `Docs` | **Stub** — real impl ships with `rtb-docs` v0.2. |
-| `mcp` | `Mcp` | **Stub** — real impl ships with `rtb-mcp` v0.3. |
+| `update` | `Update` | Registered by [`rtb-update`](rtb-update.md) v0.1. Subcommands `check` / `run`. |
+| `docs` | `Docs` | Registered by [`rtb-docs`](rtb-docs.md) v0.1. Subcommands `list` / `show` / `browse` / `serve` / `ask`. |
+| `mcp` | `Mcp` | Registered by [`rtb-mcp`](rtb-mcp.md) v0.1. Subcommands `serve` / `list`. |
 
 ### Replacing a built-in
 
 Downstream crates override any built-in command by registering a
 `Command` with the same name. `Application::build` deduplicates
-keeping the last entry in slice order, which matches the intuition
-that a real `update` command from the v0.2 `rtb-update` crate
-overrides `rtb-cli`'s stub of the same name:
+keeping the last entry in slice order, so a downstream tool can
+ship its own `version` (or any other) command and the framework's
+default falls away:
 
 ```rust
 use rtb_app::command::{BUILTIN_COMMANDS, Command, CommandSpec};
@@ -194,7 +194,7 @@ pub struct MyUpdate;
 impl Command for MyUpdate {
     fn spec(&self) -> &CommandSpec {
         static SPEC: CommandSpec = CommandSpec {
-            name: "update",   // collides with rtb-cli stub; dedup picks the later entry
+            name: "update",   // collides with rtb-update; dedup picks the later entry
             about: "Run the real update flow",
             aliases: &[],
             feature: Some(rtb_app::features::Feature::Update),
@@ -219,7 +219,7 @@ fn __register_update() -> Box<dyn Command> { Box::new(MyUpdate) }
 | `HEALTH_CHECKS`, `INITIALISERS` | `linkme` distributed slices | 0.1.0 |
 | `Initialiser` | trait | 0.1.0 |
 | `runtime::{install_tracing, bind_shutdown_signals, LogFormat}` | module | 0.1.0 |
-| `builtins::{VersionCmd, DoctorCmd, InitCmd, ConfigShowCmd, UpdateStub, DocsStub, McpStub}` | structs | 0.1.0 |
+| `builtins::{VersionCmd, DoctorCmd, InitCmd, ConfigShowCmd}` | structs | 0.1.0 |
 | `prelude` | module (re-exports) | 0.1.0 |
 
 ## Deferred to later versions
