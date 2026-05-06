@@ -12,6 +12,20 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 
 ## [Unreleased]
 
+### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
+
+- **`rtb-tui`** flips from a stub to a real crate. Three building
+  blocks: `Wizard<S>` + `WizardStep<S>` (multi-step interactive form
+  with escape-to-back navigation, Ctrl+C handling, state threading
+  via `&mut S`), `render_table` / `render_json` (uniform `tabled` +
+  `serde_json` helpers for the upcoming `--output text|json` flag),
+  and a TTY-aware `Spinner` that no-ops when stderr isn't a terminal.
+- **`tui` Cargo feature on the `rtb` umbrella** flips to default-on.
+  Tools that compile-out `tui` explicitly via `default-features =
+  false, features = ["cli", ...]` are unaffected.
+- **`WizardError`** + **`RenderError`** — both `#[non_exhaustive]`,
+  both `Clone`, both `miette::Diagnostic`-deriving.
+
 ### Added — `rtb-mcp` v0.1 (slice 2 of v0.3)
 
 - **`rtb-mcp`** flips from `McpStub` to a working MCP server. Walks

@@ -741,9 +741,10 @@ Minimum shippable scope:
   `jsonschema`. See [`2026-05-01-v0.3-scope.md`](2026-05-01-v0.3-scope.md).
 
 ### Pending
-- **0.4** — `rtb-tui` (Wizard, tables, spinners), `rtb-cli`
-  `credentials`/`telemetry`/`config-set` subcommands,
-  `rtb-test-support` crate (replaces `App::for_testing`).
+- **0.4** — `rtb-tui` v0.1 (`Wizard`, table/json render helpers,
+  TTY-aware `Spinner`); `rtb-cli` `credentials` / `telemetry` /
+  extended `config` subtrees; global `--output text|json` flag.
+  See [`2026-05-06-v0.4-scope.md`](2026-05-06-v0.4-scope.md).
 - **0.5** — `rtb-vcs` v0.2 (git-operations slice: the `Repo` type,
   `gix`/`git2` adapters, commit/diff/blame/clone). Extends the crate
   that shipped its release slice at v0.2.
