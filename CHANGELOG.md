@@ -12,6 +12,17 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 
 ## [Unreleased]
 
+### Added — `rtb-cli` ops subtree v0.1 (slice 2 of v0.4, in progress)
+
+- **`CredentialBearing` trait** in `rtb-credentials`. Downstream
+  tools implement it on their typed config in five lines; `rtb-cli`'s
+  upcoming `credentials list / test / doctor` subcommands walk the
+  resulting `Vec` to enumerate credentials. Object-safe; blanket
+  impl for `()` keeps existing `App<()>` sites compiling unchanged.
+  See [v0.4 scope §4.1](docs/development/specs/2026-05-06-v0.4-scope.md)
+  for the design rationale and the alternatives that were rejected
+  (serde visitor, schemars-driven walk).
+
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 
 - **`rtb-tui`** flips from a stub to a real crate. Three building
