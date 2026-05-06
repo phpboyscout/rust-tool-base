@@ -117,7 +117,7 @@ fn t3_only_exposed_commands_are_registered() {
     let names: Vec<&str> = server.tool_manifest().map(|(n, _, _)| n).collect();
     assert!(names.contains(&"echo"), "expected `echo` in registry; got {names:?}");
     assert!(names.contains(&"boom"), "expected `boom` in registry; got {names:?}");
-    assert!(!names.contains(&"hidden"), "did not expect `hidden` in registry; got {names:?}",);
+    assert!(!names.contains(&"hidden"), "did not expect `hidden` in registry; got {names:?}");
 }
 
 // -- T4 ---------------------------------------------------------------
@@ -159,5 +159,5 @@ async fn t6_call_unknown_tool_returns_protocol_error() {
     let server = McpServer::new(test_app(), Transport::Stdio);
     let err = server.dispatch("does-not-exist").await.expect_err("must error");
     let s = err.to_string();
-    assert!(s.contains("does-not-exist"), "error must echo the requested name; got {s}",);
+    assert!(s.contains("does-not-exist"), "error must echo the requested name; got {s}");
 }
