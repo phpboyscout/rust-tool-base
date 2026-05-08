@@ -44,6 +44,15 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 - **`rtb_app::prelude` re-exports `CredentialBearing` and
   `CredentialRef`** so downstream tools writing the trait impl
   don't need `rtb-credentials` as a direct dependency.
+- **`rtb_telemetry::consent` module** — persisted-consent
+  primitives (`Consent`, `ConsentState`, `read`, `write`, `reset`)
+  for the upcoming `telemetry status / enable / disable / reset`
+  subtree. File lives at `<config_dir>/<tool>/consent.toml` with
+  an explicit schema version for forward compatibility. `Consent`
+  records ISO-8601 (RFC 3339) UTC timestamps for every decision.
+  `From<ConsentState> for CollectionPolicy` maps `Enabled` →
+  `Enabled` and both `Disabled` / `Unset` → `Disabled` (opt-in
+  remains the default).
 
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 
