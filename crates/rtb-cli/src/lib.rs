@@ -37,11 +37,13 @@ pub mod application;
 pub mod builtins;
 pub mod health;
 pub mod init;
+pub mod render;
 pub mod runtime;
 
 pub use application::{Application, ApplicationBuilder};
 pub use health::{HealthCheck, HealthReport, HealthStatus};
 pub use init::Initialiser;
+pub use render::{output, OutputMode};
 
 /// Glob-importable convenience prelude for downstream `fn main()`.
 pub mod prelude {

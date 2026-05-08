@@ -247,7 +247,21 @@ fn build_clap_tree(metadata: &ToolMetadata, commands: &[Box<dyn RtbCommand>]) ->
     let mut root = ClapCommand::new(metadata.name.clone())
         .about(metadata.summary.clone())
         .arg_required_else_help(true)
-        .subcommand_required(true);
+        .subcommand_required(true)
+        // Global `--output text|json` flag. Declared once at the
+        // root with `global = true`; clap propagates it onto every
+        // subcommand automatically. Subcommands that print
+        // structured data honour it via [`crate::render::output`];
+        // interactive ones (init, mcp serve, update run) ignore it.
+        // See v0.4 scope addendum §2.5 / O5.
+        .arg(
+            clap::Arg::new("output")
+                .long("output")
+                .global(true)
+                .value_parser(clap::value_parser!(crate::render::OutputMode))
+                .default_value("text")
+                .help("Output rendering mode for structured-output subcommands"),
+        );
 
     if !metadata.description.is_empty() {
         root = root.long_about(metadata.description.clone());

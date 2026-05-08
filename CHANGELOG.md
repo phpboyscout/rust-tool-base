@@ -53,6 +53,15 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   `From<ConsentState> for CollectionPolicy` maps `Enabled` →
   `Enabled` and both `Disabled` / `Unset` → `Disabled` (opt-in
   remains the default).
+- **`rtb_cli::render` module** — `OutputMode` (clap-parseable
+  `Text` default / `Json`) and `render::output(mode, rows)` that
+  wraps `rtb_tui::render_table` and `rtb_tui::render_json`. New
+  global `--output text|json` flag declared once at the clap root
+  with `Arg::global(true)` so it propagates to every subcommand
+  automatically. `OutputMode::from_args_os()` re-parses the flag
+  for `subcommand_passthrough` subtrees. Subcommands that don't
+  produce structured data (`init`, `update run`, `mcp serve`)
+  silently ignore the flag.
 
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 

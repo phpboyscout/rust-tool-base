@@ -208,6 +208,37 @@ impl Command for MyUpdate {
 fn __register_update() -> Box<dyn Command> { Box::new(MyUpdate) }
 ```
 
+## Output rendering — `--output text|json` (since 0.4.0)
+
+A global `--output text|json` flag is declared once at the root of
+the clap tree with `Arg::global(true)` and propagates to every
+subcommand. Both forms parse identically:
+
+```text
+mytool --output json subcommand
+mytool subcommand --output json
+```
+
+Subcommands that print structured data honour the flag through the
+`rtb_cli::render` module:
+
+```rust
+use rtb_cli::{OutputMode, render};
+
+let mode = OutputMode::from_args_os();   // re-parse for passthrough subtrees
+render::output(mode, &rows)?;             // tabled for Text, JSON for Json
+```
+
+`render::output` wraps `rtb_tui::render_table` (text) and
+`rtb_tui::render_json` (JSON, pretty-printed). Subcommands that
+own their own clap subtree (`subcommand_passthrough = true`)
+re-parse the flag from `std::env::args_os()` via
+`OutputMode::from_args_os` — same pattern those subcommands use
+for their other args.
+
+Subcommands without structured output (`init`, `update run`,
+`mcp serve`) silently ignore the flag.
+
 ## API surface
 
 | Item | Kind | Since |
@@ -220,6 +251,8 @@ fn __register_update() -> Box<dyn Command> { Box::new(MyUpdate) }
 | `Initialiser` | trait | 0.1.0 |
 | `runtime::{install_tracing, bind_shutdown_signals, LogFormat}` | module | 0.1.0 |
 | `builtins::{VersionCmd, DoctorCmd, InitCmd, ConfigShowCmd}` | structs | 0.1.0 |
+| `render::{OutputMode, output}` | enum + fn | 0.4.0 |
+| Global `--output text\|json` flag | clap arg | 0.4.0 |
 | `prelude` | module (re-exports) | 0.1.0 |
 
 ## Deferred to later versions
