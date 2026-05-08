@@ -173,3 +173,32 @@ fn credentials_list_json_with_no_provider_emits_empty_array() {
 fn credentials_test_unknown_name_errors() {
     bin().args(["credentials", "test", "no-such-credential"]).assert().failure();
 }
+
+// --- Contract: `telemetry --help` lists subcommands ------------------
+
+#[test]
+fn telemetry_help_lists_subcommands() {
+    let output = bin().args(["telemetry", "--help"]).output().expect("telemetry --help");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for expected in ["status", "enable", "disable", "reset"] {
+        assert!(
+            stdout.contains(expected),
+            "telemetry --help should mention {expected}; got:\n{stdout}",
+        );
+    }
+}
+
+// --- Contract: `telemetry status` exits cleanly with no consent file --
+
+#[test]
+fn telemetry_status_with_no_consent_file_succeeds() {
+    // Default-disabled, source=default — never errors.
+    bin().args(["telemetry", "status"]).assert().success();
+}
+
+// --- Contract: `telemetry enable` refuses under CI=true (C3) ----------
+
+#[test]
+fn telemetry_enable_refused_under_ci() {
+    bin().args(["telemetry", "enable"]).env("CI", "true").assert().failure();
+}

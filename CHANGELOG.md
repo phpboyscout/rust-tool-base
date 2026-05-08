@@ -97,6 +97,22 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   passthrough subtrees because their post-name tokens are captured
   as `trailing_var_arg`, so the inner parser would otherwise
   reject the flag as unknown.
+- **`telemetry` CLI subtree** (`status / enable / disable / reset`)
+  registered on `Feature::Telemetry`. `status` reports current
+  state, source (consent-file / env-override / default), decision
+  timestamp, derived `CollectionPolicy`, and the consent-file path
+  — dual-mode (text/JSON). `enable` writes the consent file and
+  prints `ToolMetadata::telemetry_notice` when set; **refuses
+  under `CI=true`** per C3 resolution. `disable` / `reset` write
+  / remove the file; `reset` is idempotent. The state-resolution
+  chain (consent file → `MYTOOL_TELEMETRY` env override → default
+  `Disabled`) is documented in the subtree's module docs.
+- **`Feature::Telemetry`** moves into the default-on set alongside
+  the new subtree. Tools that compile-out telemetry (the `telemetry`
+  Cargo feature on `rtb` is off-by-default) see no subtree
+  registered; `Features::builder().disable(Feature::Telemetry)`
+  also hides it at runtime for tools that compile it in but want
+  it suppressed for a particular invocation.
 
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 

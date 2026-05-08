@@ -212,9 +212,11 @@ future format change is non-breaking — `read` rejects unknown
 versions with a `TelemetryError::Serde`. Decisions are timestamped
 in RFC 3339 / ISO 8601 (UTC).
 
-The `Application::builder().read_telemetry_consent()` glue lives in
-`rtb-cli` (added alongside the `telemetry` subtree); this crate just
-provides the file primitives.
+The CLI-side wiring lives in `rtb-cli` — the v0.4 `telemetry`
+subtree (`status / enable / disable / reset`) reads and writes
+this file directly. `rtb-telemetry` ships the file primitives;
+`rtb-cli` does the path resolution (`ProjectDirs::config_dir()`)
+and the user-facing flow.
 
 ## API surface
 

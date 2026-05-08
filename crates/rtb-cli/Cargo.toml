@@ -22,6 +22,7 @@ rtb-error = { path = "../rtb-error", version = "0.2.0" }
 rtb-config = { path = "../rtb-config", version = "0.2.0" }
 rtb-assets = { path = "../rtb-assets", version = "0.2.0" }
 rtb-credentials = { path = "../rtb-credentials", version = "0.2.0" }
+rtb-telemetry = { path = "../rtb-telemetry", version = "0.2.0" }
 rtb-tui = { path = "../rtb-tui", version = "0.2.0" }
 clap = { workspace = true }
 tokio = { workspace = true }
@@ -36,6 +37,7 @@ serde_yaml = { workspace = true }
 serde_json = { workspace = true }
 tabled = { workspace = true }
 inquire = { workspace = true }
+directories = { workspace = true }
 
 [dev-dependencies]
 cucumber = { workspace = true }

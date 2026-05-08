@@ -79,9 +79,9 @@ impl Feature {
 /// via [`Features::builder`] to override explicitly.
 ///
 /// The default set — `Init`, `Version`, `Update`, `Docs`, `Mcp`,
-/// `Doctor`, `Credentials` — matches the Cargo default feature set
-/// of the `rtb` umbrella crate; runtime gating only hides commands
-/// that are already compiled in.
+/// `Doctor`, `Credentials`, `Telemetry` — matches the Cargo default
+/// feature set of the `rtb` umbrella crate; runtime gating only
+/// hides commands that are already compiled in.
 #[derive(Debug, Clone)]
 pub struct Features {
     enabled: HashSet<Feature>,
@@ -122,7 +122,7 @@ pub struct FeaturesBuilder {
 impl FeaturesBuilder {
     /// Start a builder pre-populated with the default feature set:
     /// `Init`, `Version`, `Update`, `Docs`, `Mcp`, `Doctor`,
-    /// `Credentials`.
+    /// `Credentials`, `Telemetry`.
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -134,6 +134,7 @@ impl FeaturesBuilder {
                 Feature::Mcp,
                 Feature::Doctor,
                 Feature::Credentials,
+                Feature::Telemetry,
             ]
             .into_iter()
             .collect(),

@@ -45,6 +45,7 @@ pub mod health;
 pub mod init;
 pub mod render;
 pub mod runtime;
+pub mod telemetry;
 
 pub use application::{Application, ApplicationBuilder};
 pub use health::{HealthCheck, HealthReport, HealthStatus};
