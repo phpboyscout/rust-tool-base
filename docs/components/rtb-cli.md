@@ -245,6 +245,7 @@ Subcommands without structured output (`init`, `update run`,
 |---|---|---|
 | `Application`, `ApplicationBuilder<M, V>` | structs | 0.1.0 |
 | `ApplicationBuilder::{metadata, version, assets, features, install_hooks, build}` | methods | 0.1.0 |
+| `ApplicationBuilder::credentials_from<T: CredentialBearing>` | method | 0.4.0 |
 | `Application::{run, run_with_args}` | async methods | 0.1.0 |
 | `HealthCheck`, `HealthStatus`, `HealthReport` | trait + types | 0.1.0 |
 | `HEALTH_CHECKS`, `INITIALISERS` | `linkme` distributed slices | 0.1.0 |

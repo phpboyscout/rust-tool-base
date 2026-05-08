@@ -36,7 +36,7 @@ fn t22b_credentials_can_be_disabled() {
 
 #[test]
 fn t22c_feature_all_includes_credentials() {
-    assert!(Feature::all().contains(&Feature::Credentials), "Feature::all() must list Credentials",);
+    assert!(Feature::all().contains(&Feature::Credentials), "Feature::all() must list Credentials");
 }
 
 // -- T23 — ToolMetadata::telemetry_notice ----------------------------

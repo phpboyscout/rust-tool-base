@@ -12,6 +12,7 @@
 
 pub mod app;
 pub mod command;
+pub mod credentials;
 pub mod features;
 pub mod metadata;
 pub mod version;
@@ -33,4 +34,6 @@ pub mod prelude {
     /// implement the v0.4 `credentials` subtree don't need to add
     /// the credentials crate to their direct dep list.
     pub use rtb_credentials::{CredentialBearing, CredentialRef};
+
+    pub use crate::credentials::{CredentialProvider, NoCredentials};
 }

@@ -4,8 +4,10 @@ use std::sync::Arc;
 
 use rtb_assets::Assets;
 use rtb_config::Config;
+use rtb_credentials::CredentialRef;
 use tokio_util::sync::CancellationToken;
 
+use crate::credentials::{list_or_empty, CredentialProvider};
 use crate::metadata::ToolMetadata;
 use crate::version::VersionInfo;
 
@@ -39,13 +41,19 @@ pub struct App {
     /// child tokens via `shutdown.child_token()` so a parent
     /// cancellation cascades.
     pub shutdown: CancellationToken,
+    /// Optional credential listing for the v0.4 `credentials`
+    /// subtree. Wired by `Application::builder().credentials_from(…)`;
+    /// `None` for tools that don't yet implement `CredentialBearing`
+    /// on their typed config — `App::credentials` returns an empty
+    /// list in that case so the subtree degrades gracefully.
+    pub credentials_provider: Option<Arc<dyn CredentialProvider>>,
 }
 
 impl App {
     /// Test-only constructor. Assembles an `App` from fresh defaults
     /// for the `assets`/`config` placeholders and the supplied
     /// `metadata`/`version`. The resulting `shutdown` token is a fresh
-    /// root token.
+    /// root token; `credentials_provider` is `None`.
     ///
     /// This bypass exists so integration tests can construct an `App`
     /// without pulling in `rtb-cli`'s full wiring. It is intentionally
@@ -61,6 +69,16 @@ impl App {
             config: Arc::new(Config::<()>::default()),
             assets: Arc::new(Assets::default()),
             shutdown: CancellationToken::new(),
+            credentials_provider: None,
         }
+    }
+
+    /// Yield the configured credentials. Returns an empty `Vec` when
+    /// no provider has been wired — `credentials list` reports the
+    /// empty set, which is the right thing for a tool that hasn't
+    /// declared any credentials yet.
+    #[must_use]
+    pub fn credentials(&self) -> Vec<(String, CredentialRef)> {
+        list_or_empty(self.credentials_provider.as_ref())
     }
 }

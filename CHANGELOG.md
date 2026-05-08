@@ -62,6 +62,16 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   for `subcommand_passthrough` subtrees. Subcommands that don't
   produce structured data (`init`, `update run`, `mcp serve`)
   silently ignore the flag.
+- **`App::credentials()` + `App::credentials_provider`** field
+  and a new `rtb_app::credentials::CredentialProvider` trait
+  (type-erased dual of `CredentialBearing` for storage on `App`).
+  Wired by `Application::builder().credentials_from(provider)`,
+  where `provider: Arc<T>` is anything that implements
+  `CredentialBearing`. Tools that don't wire a provider see
+  `App::credentials()` return an empty `Vec` — the upcoming
+  `credentials list` subcommand prints an empty table rather than
+  erroring out. `NoCredentials` ships as a convenience zero-sized
+  type for explicit "no credentials configured" wiring.
 
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 

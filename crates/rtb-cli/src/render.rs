@@ -5,7 +5,7 @@
 //!
 //! - [`OutputMode`] — clap-parseable enum (`Text` default, `Json`),
 //!   declared once at the root of the clap tree with
-//!   [`clap::Arg::global`]`(true)` so it propagates to every
+//!   `clap::Arg::global(true)` so it propagates to every
 //!   subcommand without per-leaf re-declaration.
 //! - [`output`] — generic helper that picks `tabled`-table or
 //!   pretty-printed JSON based on `OutputMode`, prints to stdout

@@ -126,6 +126,7 @@ impl TestAppBuilder<TestWitness> {
             config: Arc::new(Config::<()>::default()),
             assets: Arc::new(Assets::default()),
             shutdown: CancellationToken::new(),
+            credentials_provider: None,
         }
     }
 }

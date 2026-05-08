@@ -27,7 +27,7 @@ impl Application {
     /// Start building a new application. `metadata` and `version`
     /// must be provided before [`ApplicationBuilder::build`] will
     /// compile — enforced by the phantom-typed typestate below.
-    pub const fn builder() -> ApplicationBuilder<NoMetadata, NoVersion> {
+    pub fn builder() -> ApplicationBuilder<NoMetadata, NoVersion> {
         ApplicationBuilder::new()
     }
 
@@ -110,17 +110,19 @@ pub struct ApplicationBuilder<M, V> {
     assets: Option<Assets>,
     features: Option<Features>,
     install_hooks: bool,
+    credentials_provider: Option<Arc<dyn rtb_app::credentials::CredentialProvider>>,
 }
 
 impl ApplicationBuilder<NoMetadata, NoVersion> {
     /// Construct an empty builder.
-    pub const fn new() -> Self {
+    pub fn new() -> Self {
         Self {
             metadata: NoMetadata,
             version: NoVersion,
             assets: None,
             features: None,
             install_hooks: true,
+            credentials_provider: None,
         }
     }
 }
@@ -140,6 +142,7 @@ impl<V> ApplicationBuilder<NoMetadata, V> {
             assets: self.assets,
             features: self.features,
             install_hooks: self.install_hooks,
+            credentials_provider: self.credentials_provider,
         }
     }
 }
@@ -153,6 +156,7 @@ impl<M> ApplicationBuilder<M, NoVersion> {
             assets: self.assets,
             features: self.features,
             install_hooks: self.install_hooks,
+            credentials_provider: self.credentials_provider,
         }
     }
 }
@@ -179,6 +183,24 @@ impl<M, V> ApplicationBuilder<M, V> {
         self.install_hooks = yes;
         self
     }
+
+    /// Wire a credential provider so the v0.4 `credentials list /
+    /// test / doctor` subcommands can enumerate the tool's
+    /// `CredentialRef`s. The argument is anything that implements
+    /// [`rtb_credentials::CredentialBearing`] — typically the tool's
+    /// typed config struct passed as `Arc::new(my_config.clone())`.
+    ///
+    /// Tools that don't wire a provider see `credentials list` print
+    /// an empty table — the subtree degrades gracefully rather than
+    /// erroring out at startup.
+    pub fn credentials_from<T>(mut self, provider: Arc<T>) -> Self
+    where
+        T: rtb_credentials::CredentialBearing + Send + Sync + 'static,
+    {
+        self.credentials_provider =
+            Some(provider as Arc<dyn rtb_app::credentials::CredentialProvider>);
+        self
+    }
 }
 
 impl ApplicationBuilder<HasMetadata, HasVersion> {
@@ -198,6 +220,7 @@ impl ApplicationBuilder<HasMetadata, HasVersion> {
             config: Arc::new(Config::<()>::default()),
             assets: Arc::new(assets),
             shutdown: CancellationToken::new(),
+            credentials_provider: self.credentials_provider,
         };
 
         // Materialise BUILTIN_COMMANDS filtered by the runtime

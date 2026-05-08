@@ -4358,6 +4358,7 @@ dependencies = [
  "rtb-app",
  "rtb-assets",
  "rtb-config",
+ "rtb-credentials",
  "rtb-error",
  "rtb-tui",
  "semver",

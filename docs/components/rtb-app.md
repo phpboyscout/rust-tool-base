@@ -63,6 +63,15 @@ pub struct App {
     pub config:   Arc<Config>,      // Config<()> by default
     pub assets:   Arc<Assets>,
     pub shutdown: CancellationToken,
+    pub credentials_provider: Option<Arc<dyn CredentialProvider>>, // since 0.4.0
+}
+
+impl App {
+    /// Yield the configured credentials. Returns `Vec::new()` when
+    /// no provider has been wired — `credentials list` reports the
+    /// empty set, which is the right thing for a tool that hasn't
+    /// declared any credentials yet.
+    pub fn credentials(&self) -> Vec<(String, CredentialRef)>;  // since 0.4.0
 }
 ```
 
@@ -330,6 +339,9 @@ built-in) and the framework's default falls away.
 |---|---|---|
 | `App` | struct | 0.1.0 |
 | `App::for_testing` | fn (`#[doc(hidden)]`) | 0.1.0 |
+| `App::credentials` | method | 0.4.0 |
+| `App::credentials_provider` | optional `Arc<dyn CredentialProvider>` field | 0.4.0 |
+| `credentials::{CredentialProvider, NoCredentials}` | trait + struct | 0.4.0 |
 | `ToolMetadata` | struct + `bon::Builder` | 0.1.0 |
 | `ToolMetadata::telemetry_notice` | `Option<&'static str>` field | 0.4.0 |
 | `ReleaseSource`, `HelpChannel` | enum | 0.1.0 |
