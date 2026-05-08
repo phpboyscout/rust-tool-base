@@ -12,7 +12,7 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 
 ## [Unreleased]
 
-### Added — `rtb-cli` ops subtree v0.1 (slice 2 of v0.4, in progress)
+### Added — `rtb-cli` ops subtree v0.1 (slice 2 of v0.4)
 
 - **`CredentialBearing` trait** in `rtb-credentials`. Downstream
   tools implement it on their typed config in five lines; `rtb-cli`'s
@@ -135,6 +135,15 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   removed; the new `config_cmd::ConfigCmd` registers in its place.
   Downstream tools that referenced `builtins::ConfigShowCmd`
   directly (none in the workspace) need to update the import.
+- **`examples/minimal`** now wires a sample `MyConfig` struct
+  with two `CredentialBearing` declarations (`anthropic` +
+  `github`, both env-with-fallback), demonstrating
+  `Application::builder().credentials_from(Arc::new(my_config))`.
+  The smoke suite gains end-to-end coverage of `credentials list`,
+  `credentials test` (env-resolves, missing-resolves, unknown
+  errors), and `credentials doctor` (per-credential aggregation
+  and overall non-zero on any miss). Brings the example to 24
+  smoke tests.
 
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 

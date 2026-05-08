@@ -146,17 +146,23 @@ fn credentials_help_lists_subcommands() {
     }
 }
 
-// --- Contract: `credentials list` with no provider exits cleanly -----
+// --- Contract: `credentials list` shows the wired credentials --------
 
 #[test]
-fn credentials_list_without_provider_exits_zero() {
-    // The minimal example doesn't wire `credentials_from(...)`, so the
-    // subtree degrades to an empty listing rather than erroring out.
-    bin().args(["credentials", "list"]).assert().success();
+fn credentials_list_lists_wired_credentials() {
+    let output = bin().args(["credentials", "list"]).output().expect("credentials list");
+    assert!(output.status.success(), "exit non-zero: {output:?}");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for expected in ["anthropic", "github"] {
+        assert!(
+            stdout.contains(expected),
+            "credentials list should mention {expected}; got:\n{stdout}",
+        );
+    }
 }
 
 #[test]
-fn credentials_list_json_with_no_provider_emits_empty_array() {
+fn credentials_list_json_emits_array_of_wired_refs() {
     let output =
         bin().args(["credentials", "list", "--output", "json"]).output().expect("credentials list");
     assert!(output.status.success(), "exit non-zero: {output:?}");
@@ -164,7 +170,11 @@ fn credentials_list_json_with_no_provider_emits_empty_array() {
     let parsed: serde_json::Value =
         serde_json::from_str(stdout.trim()).expect("output must be JSON");
     let arr = parsed.as_array().expect("top-level array");
-    assert!(arr.is_empty(), "no provider → empty array; got {arr:?}");
+    assert_eq!(arr.len(), 2, "two credentials wired; got {arr:?}");
+    let names: Vec<&str> =
+        arr.iter().filter_map(|row| row.get("name").and_then(serde_json::Value::as_str)).collect();
+    assert!(names.contains(&"anthropic"), "names={names:?}");
+    assert!(names.contains(&"github"), "names={names:?}");
 }
 
 // --- Contract: `credentials test <unknown>` errors helpfully ---------
@@ -172,6 +182,69 @@ fn credentials_list_json_with_no_provider_emits_empty_array() {
 #[test]
 fn credentials_test_unknown_name_errors() {
     bin().args(["credentials", "test", "no-such-credential"]).assert().failure();
+}
+
+// --- Contract: `credentials test` reports env layer when set ---------
+
+#[test]
+fn credentials_test_resolves_via_env_when_set() {
+    let output = bin()
+        .args(["credentials", "test", "anthropic", "--output", "json"])
+        .env("MINIMAL_ANTHROPIC_API_KEY", "test-secret")
+        // Clear any inherited fallback so the explicit env layer is the
+        // only one that resolves — keeps the source assertion stable.
+        .env_remove("ANTHROPIC_API_KEY")
+        .output()
+        .expect("credentials test");
+    assert!(output.status.success(), "exit non-zero: {output:?}");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed: serde_json::Value =
+        serde_json::from_str(stdout.trim()).expect("output must be JSON");
+    let arr = parsed.as_array().expect("top-level array");
+    let row = &arr[0];
+    assert_eq!(row.get("status").and_then(serde_json::Value::as_str), Some("resolved"));
+    assert_eq!(row.get("source").and_then(serde_json::Value::as_str), Some("env"));
+}
+
+// --- Contract: `credentials test` reports missing when nothing is set --
+
+#[test]
+fn credentials_test_reports_missing_when_no_layer_resolves() {
+    let output = bin()
+        .args(["credentials", "test", "github", "--output", "json"])
+        .env_remove("MINIMAL_GITHUB_TOKEN")
+        .env_remove("GITHUB_TOKEN")
+        .output()
+        .expect("credentials test");
+    // Non-zero exit when nothing resolves.
+    assert!(!output.status.success(), "missing credential must exit non-zero");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed: serde_json::Value =
+        serde_json::from_str(stdout.trim()).expect("output must be JSON");
+    let arr = parsed.as_array().expect("top-level array");
+    let row = &arr[0];
+    assert_eq!(row.get("status").and_then(serde_json::Value::as_str), Some("missing"));
+}
+
+// --- Contract: `credentials doctor` aggregates per-credential probes --
+
+#[test]
+fn credentials_doctor_aggregates_per_credential() {
+    let output = bin()
+        .args(["credentials", "doctor", "--output", "json"])
+        .env("MINIMAL_ANTHROPIC_API_KEY", "test-secret")
+        .env_remove("ANTHROPIC_API_KEY")
+        .env_remove("MINIMAL_GITHUB_TOKEN")
+        .env_remove("GITHUB_TOKEN")
+        .output()
+        .expect("credentials doctor");
+    // One credential resolves, one doesn't — overall non-zero.
+    assert!(!output.status.success(), "any-missing → non-zero exit");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed: serde_json::Value =
+        serde_json::from_str(stdout.trim()).expect("output must be JSON");
+    let arr = parsed.as_array().expect("top-level array");
+    assert_eq!(arr.len(), 2, "doctor must aggregate every wired credential");
 }
 
 // --- Contract: `telemetry --help` lists subcommands ------------------
