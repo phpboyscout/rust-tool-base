@@ -202,3 +202,34 @@ fn telemetry_status_with_no_consent_file_succeeds() {
 fn telemetry_enable_refused_under_ci() {
     bin().args(["telemetry", "enable"]).env("CI", "true").assert().failure();
 }
+
+// --- Contract: `config --help` lists the v0.4 subcommands -------------
+
+#[test]
+fn config_help_lists_subcommands() {
+    let output = bin().args(["config", "--help"]).output().expect("config --help");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for expected in ["show", "get", "set", "schema", "validate"] {
+        assert!(
+            stdout.contains(expected),
+            "config --help should mention {expected}; got:\n{stdout}",
+        );
+    }
+}
+
+// --- Contract: bare `config` defaults to `show` -----------------------
+
+#[test]
+fn config_defaults_to_show() {
+    bin().args(["config"]).assert().success();
+}
+
+// --- Contract: `config schema` errors clearly without typed config ----
+
+#[test]
+fn config_schema_errors_without_typed_config() {
+    // Per the v0.4 contract, schema requires a typed-config wiring
+    // that downstream tools provide. Until App<C> lands, the
+    // subcommand surfaces a help-laden error.
+    bin().args(["config", "schema"]).assert().failure();
+}

@@ -40,6 +40,7 @@
 
 pub mod application;
 pub mod builtins;
+pub mod config_cmd;
 pub mod credentials;
 pub mod health;
 pub mod init;

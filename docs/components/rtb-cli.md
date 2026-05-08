@@ -171,7 +171,7 @@ runtime `Features` set.
 | `version` | `Version` | Prints name/semver/commit/date + target triple. |
 | `doctor` | `Doctor` | Runs `HEALTH_CHECKS`; exits non-zero if any `Fail`. |
 | `init` | `Init` | Iterates `INITIALISERS`; skips already-configured. |
-| `config` | `Config` (opt-in) | Shows the resolved typed config. |
+| `config` | `Config` | v0.4 — moved into the default-on set. Subcommands `show` (default) / `get` / `set` / `schema` / `validate`. Operates on the canonical user-file path `<config_dir>/<tool>/config.yaml` (override via `--config-file PATH`). |
 | `update` | `Update` | Registered by [`rtb-update`](rtb-update.md) v0.1. Subcommands `check` / `run`. |
 | `docs` | `Docs` | Registered by [`rtb-docs`](rtb-docs.md) v0.1. Subcommands `list` / `show` / `browse` / `serve` / `ask`. |
 | `mcp` | `Mcp` | Registered by [`rtb-mcp`](rtb-mcp.md) v0.1. Subcommands `serve` / `list`. |
@@ -253,11 +253,12 @@ Subcommands without structured output (`init`, `update run`,
 | `HEALTH_CHECKS`, `INITIALISERS` | `linkme` distributed slices | 0.1.0 |
 | `Initialiser` | trait | 0.1.0 |
 | `runtime::{install_tracing, bind_shutdown_signals, LogFormat}` | module | 0.1.0 |
-| `builtins::{VersionCmd, DoctorCmd, InitCmd, ConfigShowCmd}` | structs | 0.1.0 |
+| `builtins::{VersionCmd, DoctorCmd, InitCmd}` | structs | 0.1.0 |
 | `render::{OutputMode, output, strip_global_output}` | enum + fn + helper | 0.4.0 |
 | Global `--output text\|json` flag | clap arg | 0.4.0 |
 | `credentials::CredentialsCmd` (registered) | struct | 0.4.0 |
 | `telemetry::TelemetryCmd` (registered) | struct | 0.4.0 |
+| `config_cmd::ConfigCmd` (registered) | struct | 0.4.0 |
 | `prelude` | module (re-exports) | 0.1.0 |
 
 ## Deferred to later versions

@@ -225,7 +225,7 @@ fn run_enable(app: &App) -> miette::Result<()> {
     if let Some(notice) = app.metadata.telemetry_notice {
         println!("{notice}");
     } else {
-        println!("telemetry enabled. {} now records anonymised usage events.", app.metadata.name,);
+        println!("telemetry enabled. {} now records anonymised usage events.", app.metadata.name);
         println!("(no privacy notice configured; set ToolMetadata::telemetry_notice for a tool-specific message.)");
     }
     println!("consent file: {}", path.display());

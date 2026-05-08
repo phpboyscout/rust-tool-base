@@ -225,12 +225,14 @@ fn t12_features_defaults() {
         Feature::Doctor,
         Feature::Credentials, // since 0.4.0
         Feature::Telemetry,   // moved to default-on in 0.4.0 alongside the
-                              // `telemetry` CLI subtree.
+        // `telemetry` CLI subtree.
+        Feature::Config, // moved to default-on in 0.4.0 alongside the
+                         // `config get / set / schema / validate` extension.
     ] {
         assert!(f.is_enabled(feature), "{feature:?} should be enabled by default");
     }
     // Disabled
-    for feature in [Feature::Ai, Feature::Config, Feature::Changelog] {
+    for feature in [Feature::Ai, Feature::Changelog] {
         assert!(!f.is_enabled(feature), "{feature:?} should be disabled by default");
     }
 }

@@ -197,9 +197,10 @@ impl Feature {
 ```
 
 The default-enabled set is `Init`, `Version`, `Update`, `Docs`,
-`Mcp`, `Doctor`, `Credentials`, `Telemetry`. `Credentials` and
-`Telemetry` both joined the default set in 0.4.0 alongside the
-new `credentials` and `telemetry` subtrees in `rtb-cli`.
+`Mcp`, `Doctor`, `Credentials`, `Telemetry`, `Config`.
+`Credentials`, `Telemetry`, and `Config` all joined the default
+set in 0.4.0 alongside the new `credentials`, `telemetry`, and
+extended `config` subtrees in `rtb-cli`.
 
 !!! tip "`all()` returns a slice, not an array"
     `Feature` is `#[non_exhaustive]`; returning `[Self; N]` from

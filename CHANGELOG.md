@@ -113,6 +113,28 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   registered; `Features::builder().disable(Feature::Telemetry)`
   also hides it at runtime for tools that compile it in but want
   it suppressed for a particular invocation.
+- **`config` CLI subtree extension** — the bare `config` command
+  becomes a `subcommand_passthrough` subtree. Subcommands:
+  `show` (the v0.1 placeholder for tools without typed config —
+  unchanged), `get <jsonpath>`, `set <jsonpath> <value>
+  [--config-file PATH]`, `schema`, and `validate [--file PATH]`.
+  Bare `config` defaults to `show` for backward compatibility.
+  `get` / `set` walk the canonical user-file
+  (`<config_dir>/<tool>/config.yaml`) as a `serde_json::Value`;
+  format is YAML by default, TOML for `.toml`, JSON for `.json`,
+  preserved on round-trip. Path syntax accepts both
+  `serde_json`-pointer (`/foo/bar`) and dotted (`.foo.bar`) forms.
+  `set` parses values as JSON with a string fallback so bare
+  scalars don't need quoting. `schema` errors with a help-laden
+  message until typed-config integration (`App<C>`) lands; `validate`
+  format-parses the candidate file at v0.4 (full schema validation
+  ships with `App<C>`).
+- **`Feature::Config`** moves into the default-on set alongside
+  the extended subtree.
+- The legacy `ConfigShowCmd` exported from `rtb_cli::builtins` is
+  removed; the new `config_cmd::ConfigCmd` registers in its place.
+  Downstream tools that referenced `builtins::ConfigShowCmd`
+  directly (none in the workspace) need to update the import.
 
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 
