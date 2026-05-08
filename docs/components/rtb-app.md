@@ -89,7 +89,12 @@ pub struct ToolMetadata {
     pub summary: String,                            // required
     pub description: String,                        // optional
     pub release_source: Option<ReleaseSource>,      // optional
+    pub release_credential: Option<CredentialRef>,  // optional
     pub help: HelpChannel,                          // optional
+    pub update_public_keys: Vec<[u8; 32]>,          // optional
+    pub update_checksums_asset: Option<&'static str>, // optional
+    pub update_asset_pattern: Option<&'static str>, // optional
+    pub telemetry_notice: Option<&'static str>,     // optional, since 0.4.0
 }
 ```
 
@@ -97,7 +102,9 @@ pub struct ToolMetadata {
 omitting either is a compile error (trybuild fixture in the test
 suite proves this). `release_source` is required only when
 `Feature::Update` is runtime-enabled; missing it when `update` runs
-yields a runtime diagnostic.
+yields a runtime diagnostic. `telemetry_notice` is read by
+`rtb-cli`'s v0.4 `telemetry enable` subcommand to print a
+tool-specific privacy notice; `None` falls back to a generic line.
 
 ### `ReleaseSource`
 
@@ -171,6 +178,7 @@ impl VersionInfo {
 pub enum Feature {
     Init, Version, Update, Docs, Mcp, Doctor,
     Ai, Telemetry, Config, Changelog,
+    Credentials,    // since 0.4.0
 }
 
 impl Feature {
@@ -178,6 +186,10 @@ impl Feature {
     pub const fn all() -> &'static [Self];
 }
 ```
+
+The default-enabled set is `Init`, `Version`, `Update`, `Docs`,
+`Mcp`, `Doctor`, `Credentials`. `Credentials` joined the defaults
+in 0.4.0 alongside the new `credentials` subtree in `rtb-cli`.
 
 !!! tip "`all()` returns a slice, not an array"
     `Feature` is `#[non_exhaustive]`; returning `[Self; N]` from
@@ -319,15 +331,18 @@ built-in) and the framework's default falls away.
 | `App` | struct | 0.1.0 |
 | `App::for_testing` | fn (`#[doc(hidden)]`) | 0.1.0 |
 | `ToolMetadata` | struct + `bon::Builder` | 0.1.0 |
+| `ToolMetadata::telemetry_notice` | `Option<&'static str>` field | 0.4.0 |
 | `ReleaseSource`, `HelpChannel` | enum | 0.1.0 |
 | `VersionInfo` | struct + fluent setters | 0.1.0 |
 | `Feature`, `Features`, `FeaturesBuilder` | enum + structs | 0.1.0 |
+| `Feature::Credentials` | enum variant (default-on) | 0.4.0 |
 | `Command` | async trait | 0.1.0 |
 | `Command::subcommand_passthrough` | default trait method | 0.2.0 |
 | `Command::mcp_exposed` | default trait method | 0.3.0 |
 | `Command::mcp_input_schema` | default trait method | 0.3.0 |
 | `CommandSpec` | struct | 0.1.0 |
 | `BUILTIN_COMMANDS` | `linkme` distributed slice | 0.1.0 |
+| `prelude::{CredentialBearing, CredentialRef}` | re-export from `rtb-credentials` | 0.4.0 |
 
 Re-exports: `linkme` (so downstream `#[distributed_slice]` resolves
 `::linkme::...` paths when users add `linkme` as a direct dep — the

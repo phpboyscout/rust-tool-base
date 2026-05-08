@@ -33,6 +33,17 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   variants: `Write(String)`, `Schema(String)` — both
   unconditionally present in the enum, only constructable behind
   the feature.
+- **`Feature::Credentials`** runtime variant on `rtb_app::Feature`,
+  default-enabled. Gates the upcoming `credentials list / add /
+  remove / test / doctor` subcommands.
+- **`ToolMetadata::telemetry_notice`** — new optional
+  `&'static str` field, additive (existing builder chains compile
+  unchanged). Read by `rtb-cli`'s `telemetry enable` to print a
+  tool-specific privacy notice; `None` falls back to a generic
+  message.
+- **`rtb_app::prelude` re-exports `CredentialBearing` and
+  `CredentialRef`** so downstream tools writing the trait impl
+  don't need `rtb-credentials` as a direct dependency.
 
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 
