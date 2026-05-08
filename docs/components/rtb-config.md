@@ -94,13 +94,11 @@ impl<C> ConfigBuilder<C> {
 #[derive(Debug, Error, Diagnostic)]
 #[non_exhaustive]
 pub enum ConfigError {
-    #[error("configuration error: {0}")]
-    #[diagnostic(code(rtb::config::parse), help("..."))]
-    Parse(String),
-
-    #[error("could not read config file {path}: {source}")]
-    #[diagnostic(code(rtb::config::io))]
-    Io { path: PathBuf, #[source] source: std::io::Error },
+    Parse(String),                                   // figment / serde
+    Io { path: PathBuf, source: std::io::Error },    // user-file read
+    Watch(String),                                   // hot-reload feature
+    Write(String),                                   // mutable feature
+    Schema(String),                                  // mutable feature
 }
 ```
 
@@ -108,15 +106,53 @@ Missing files are **not** an error (figment treats absent files as
 empty sources). A path that exists but isn't a regular file (e.g.
 a directory) surfaces as `ConfigError::Io` with the offending path.
 
+The `Write` and `Schema` variants are constructable only when the
+`mutable` feature is enabled, but the variants are unconditionally
+present so consumers' `match` arms stay cfg-clean.
+
+## `mutable` feature — `Config::schema` and `Config::write`
+
+Default-off; opt in with `rtb-config = { ..., features = ["mutable"] }`
+when you need `rtb-cli`'s v0.4 `config get / set / schema / validate`
+subcommands. Adds two methods on `Config<C>`:
+
+```rust
+#[cfg(feature = "mutable")]
+impl<C> Config<C>
+where
+    C: DeserializeOwned + serde::Serialize + schemars::JsonSchema + Send + Sync + 'static,
+{
+    /// JSON Schema for `C` as a `serde_json::Value`.
+    pub fn schema() -> serde_json::Value;
+
+    /// Write the currently-stored value to `path`. Format chosen by
+    /// extension: `.yml` / `.yaml` (or no extension) → YAML;
+    /// `.toml` → TOML; `.json` → JSON. Parent directories are
+    /// created on demand.
+    ///
+    /// # Errors
+    /// `ConfigError::Write` on serialisation or I/O failure.
+    pub fn write(&self, path: &Path) -> Result<(), ConfigError>;
+}
+```
+
+The feature pulls in `schemars`, `serde_json`, `serde_yaml`, and
+`toml` — significant dependency weight that tools without
+`config set / schema` should not pay. Round-trip (write → re-read)
+is value-stable per the integration tests in
+`crates/rtb-config/tests/mutable.rs`.
+
 ## API surface
 
 | Item | Kind | Since |
 |---|---|---|
 | `Config<C = ()>` | struct (generic) | 0.1.0 |
-| `Config::builder`, `get`, `reload` | methods | 0.1.0 |
+| `Config::builder`, `get`, `reload`, `subscribe` | methods | 0.1.0 / 0.2.0 |
 | `ConfigBuilder<C>` | struct | 0.1.0 |
 | `ConfigBuilder::{embedded_default, user_file, env_prefixed, build}` | methods | 0.1.0 |
-| `ConfigError::{Parse, Io}` | enum variants | 0.1.0 |
+| `Config::watch_files` (feature `hot-reload`) | method | 0.2.0 |
+| `Config::schema`, `Config::write` (feature `mutable`) | methods | 0.4.0 |
+| `ConfigError::{Parse, Io, Watch, Write, Schema}` | enum variants | 0.1.0 / 0.2.0 / 0.4.0 |
 
 ## Usage patterns
 

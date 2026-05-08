@@ -4397,10 +4397,14 @@ dependencies = [
  "miette",
  "notify",
  "notify-debouncer-full",
+ "schemars 0.8.22",
  "serde",
+ "serde_json",
+ "serde_yaml",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
+ "toml 0.8.23",
 ]
 
 [[package]]

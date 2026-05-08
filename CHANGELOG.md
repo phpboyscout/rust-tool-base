@@ -22,6 +22,17 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   See [v0.4 scope §4.1](docs/development/specs/2026-05-06-v0.4-scope.md)
   for the design rationale and the alternatives that were rejected
   (serde visitor, schemars-driven walk).
+- **`mutable` Cargo feature on `rtb-config`** — adds
+  `Config::schema()` (returns the JSON Schema for `C` as a
+  `serde_json::Value`) and `Config::write(&path)` (writes the
+  merged value to disk; format chosen by extension —
+  `.yml` / `.yaml` → YAML, `.toml` → TOML, `.json` → JSON, default
+  YAML). Backs the upcoming `config schema / set / validate`
+  subcommands. Default-off; pulls in `schemars` / `serde_yaml` /
+  `toml` only for tools that opt in. Two new `ConfigError`
+  variants: `Write(String)`, `Schema(String)` — both
+  unconditionally present in the enum, only constructable behind
+  the feature.
 
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 
