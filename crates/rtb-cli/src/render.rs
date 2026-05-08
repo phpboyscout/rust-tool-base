@@ -82,6 +82,39 @@ impl OutputMode {
     }
 }
 
+/// Remove the global `--output` flag (and its value) from an
+/// `args_os()` vector before a `subcommand_passthrough` subtree
+/// re-parses with its own clap definition.
+///
+/// clap's outer `global = true` doesn't reach passthrough subtrees
+/// (their post-name tokens are captured as `trailing_var_arg`), so
+/// the inner parser would otherwise reject `--output` as unknown.
+/// This helper is idempotent — safe to call even when the flag is
+/// absent.
+#[must_use]
+pub fn strip_global_output(args: Vec<std::ffi::OsString>) -> Vec<std::ffi::OsString> {
+    let mut out = Vec::with_capacity(args.len());
+    let mut iter = args.into_iter();
+    while let Some(arg) = iter.next() {
+        let Some(s) = arg.to_str() else {
+            out.push(arg);
+            continue;
+        };
+        if s.starts_with("--output=") {
+            // Inline form — drop just this token.
+            continue;
+        }
+        if s == "--output" {
+            // Space-separated form — drop this token and the value.
+            // Defensive: if no value follows, just skip.
+            iter.next();
+            continue;
+        }
+        out.push(arg);
+    }
+    out
+}
+
 /// Render `rows` per `mode` and write to stdout. Wraps
 /// [`rtb_tui::render_table`] for [`OutputMode::Text`] and
 /// [`rtb_tui::render_json`] for [`OutputMode::Json`].

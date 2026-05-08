@@ -23,6 +23,45 @@ pub struct Resolver {
     keychain: Arc<dyn CredentialStore>,
 }
 
+/// Which precedence layer would resolve a [`CredentialRef`].
+/// Returned by [`Resolver::probe`] — see that method for the
+/// resolution chain.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ResolutionSource {
+    /// Resolved via `cref.env` — a tool-specific env var set by the
+    /// operator.
+    Env,
+    /// Resolved via `cref.keychain` — a value stored in the OS
+    /// keychain.
+    Keychain,
+    /// Resolved via `cref.literal` — the secret embedded in config.
+    /// Only reachable when not running under `CI=true`.
+    Literal,
+    /// Resolved via `cref.fallback_env` — an ecosystem-default env
+    /// var (`ANTHROPIC_API_KEY`, `GITHUB_TOKEN`, …).
+    FallbackEnv,
+}
+
+/// Outcome of [`Resolver::probe`].
+///
+/// Distinct from `Result<ResolutionSource, CredentialError>` so the
+/// "would have resolved literally but CI mode refuses" case has its
+/// own variant — operators reading `credentials list` need to see
+/// that distinction explicitly.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ResolutionOutcome {
+    /// The credential resolves cleanly via the given source.
+    Resolved(ResolutionSource),
+    /// Only the literal layer is configured and `CI=true` is set, so
+    /// the resolver would refuse the resolution at runtime.
+    LiteralRefusedInCi,
+    /// No layer resolves — equivalent to
+    /// [`CredentialError::NotFound`] from [`Resolver::resolve`].
+    Missing,
+}
+
 impl Resolver {
     /// Construct with an injected keychain-backed [`CredentialStore`].
     /// Tests typically pass a [`crate::MemoryStore`] here.
@@ -37,6 +76,51 @@ impl Resolver {
     #[must_use]
     pub fn with_platform_default() -> Self {
         Self::new(Arc::new(KeyringStore::new()))
+    }
+
+    /// Walk the chain and return the resolution source without
+    /// returning the secret value. Used by `rtb-cli`'s v0.4
+    /// `credentials list / doctor` subcommands to report which
+    /// precedence layer would supply each credential.
+    ///
+    /// Returns:
+    ///
+    /// - [`ResolutionOutcome::Resolved`] with the [`ResolutionSource`]
+    ///   that hit, **if** the underlying value was readable.
+    /// - [`ResolutionOutcome::LiteralRefusedInCi`] when only the
+    ///   literal layer is configured and `CI=true` is set.
+    /// - [`ResolutionOutcome::Missing`] when nothing resolves.
+    ///
+    /// Does the same I/O as [`Self::resolve`] (including a keychain
+    /// fetch when configured); the secret value is read and dropped
+    /// rather than returned. Operators can run `credentials list`
+    /// without their console scrolling secrets — at the cost of one
+    /// keychain round-trip per ref.
+    pub async fn probe(&self, cref: &CredentialRef) -> Result<ResolutionOutcome, CredentialError> {
+        if let Some(name) = cref.env.as_deref() {
+            if std::env::var(name).is_ok() {
+                return Ok(ResolutionOutcome::Resolved(ResolutionSource::Env));
+            }
+        }
+        if let Some(keyref) = cref.keychain.as_ref() {
+            match self.keychain.get(&keyref.service, &keyref.account).await {
+                Ok(_) => return Ok(ResolutionOutcome::Resolved(ResolutionSource::Keychain)),
+                Err(CredentialError::NotFound { .. }) => { /* fall through */ }
+                Err(other) => return Err(other),
+            }
+        }
+        if cref.literal.is_some() {
+            if is_ci() {
+                return Ok(ResolutionOutcome::LiteralRefusedInCi);
+            }
+            return Ok(ResolutionOutcome::Resolved(ResolutionSource::Literal));
+        }
+        if let Some(name) = cref.fallback_env.as_deref() {
+            if std::env::var(name).is_ok() {
+                return Ok(ResolutionOutcome::Resolved(ResolutionSource::FallbackEnv));
+            }
+        }
+        Ok(ResolutionOutcome::Missing)
     }
 
     /// Walk the chain and return the first hit.

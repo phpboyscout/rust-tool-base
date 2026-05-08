@@ -31,10 +31,16 @@
 //! See `docs/development/specs/2026-04-22-rtb-cli-v0.1.md` for the
 //! authoritative contract.
 
-#![forbid(unsafe_code)]
+// `deny` (not `forbid`) so submodules registering into
+// `linkme::distributed_slice` (the `credentials` and similar
+// subtrees) can `#![allow(unsafe_code)]` for the
+// `#[link_section]` attribute the macro emits. No hand-rolled
+// `unsafe` blocks exist in this crate.
+#![deny(unsafe_code)]
 
 pub mod application;
 pub mod builtins;
+pub mod credentials;
 pub mod health;
 pub mod init;
 pub mod render;

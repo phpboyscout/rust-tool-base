@@ -131,3 +131,45 @@ fn mcp_list_succeeds_with_no_exposed_tools() {
     // so `mcp list` should exit 0 with empty stdout — not error out.
     bin().args(["mcp", "list"]).assert().success();
 }
+
+// --- Contract: `credentials --help` lists subcommands ----------------
+
+#[test]
+fn credentials_help_lists_subcommands() {
+    let output = bin().args(["credentials", "--help"]).output().expect("credentials --help");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for expected in ["list", "add", "remove", "test", "doctor"] {
+        assert!(
+            stdout.contains(expected),
+            "credentials --help should mention {expected}; got:\n{stdout}",
+        );
+    }
+}
+
+// --- Contract: `credentials list` with no provider exits cleanly -----
+
+#[test]
+fn credentials_list_without_provider_exits_zero() {
+    // The minimal example doesn't wire `credentials_from(...)`, so the
+    // subtree degrades to an empty listing rather than erroring out.
+    bin().args(["credentials", "list"]).assert().success();
+}
+
+#[test]
+fn credentials_list_json_with_no_provider_emits_empty_array() {
+    let output =
+        bin().args(["credentials", "list", "--output", "json"]).output().expect("credentials list");
+    assert!(output.status.success(), "exit non-zero: {output:?}");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed: serde_json::Value =
+        serde_json::from_str(stdout.trim()).expect("output must be JSON");
+    let arr = parsed.as_array().expect("top-level array");
+    assert!(arr.is_empty(), "no provider → empty array; got {arr:?}");
+}
+
+// --- Contract: `credentials test <unknown>` errors helpfully ---------
+
+#[test]
+fn credentials_test_unknown_name_errors() {
+    bin().args(["credentials", "test", "no-such-credential"]).assert().failure();
+}

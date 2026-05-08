@@ -197,6 +197,8 @@ All variants carry `rtb::credentials::*` diagnostic codes.
 | `KeyringStore`, `EnvStore`, `LiteralStore`, `MemoryStore` | structs | 0.1.0 |
 | `CredentialRef`, `KeychainRef` | structs (deserialize-only) | 0.1.0 |
 | `Resolver` | struct | 0.1.0 |
+| `Resolver::probe` | method | 0.4.0 |
+| `ResolutionSource`, `ResolutionOutcome` | enums | 0.4.0 |
 | `CredentialError::{NotFound, LiteralRefusedInCi, Keychain, ReadOnly, Io}` | enum | 0.1.0 |
 | `CredentialBearing` | trait + blanket impl for `()` | 0.4.0 |
 | Re-exports: `SecretString`, `ExposeSecret` | from `secrecy` | 0.1.0 |

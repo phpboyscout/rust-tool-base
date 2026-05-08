@@ -175,6 +175,7 @@ runtime `Features` set.
 | `update` | `Update` | Registered by [`rtb-update`](rtb-update.md) v0.1. Subcommands `check` / `run`. |
 | `docs` | `Docs` | Registered by [`rtb-docs`](rtb-docs.md) v0.1. Subcommands `list` / `show` / `browse` / `serve` / `ask`. |
 | `mcp` | `Mcp` | Registered by [`rtb-mcp`](rtb-mcp.md) v0.1. Subcommands `serve` / `list`. |
+| `credentials` | `Credentials` | v0.4. Subcommands `list` / `add` / `remove` / `test` / `doctor`. Backed by `App::credentials_provider` and `rtb-credentials`'s `Resolver` / `KeyringStore`. |
 
 ### Replacing a built-in
 
@@ -252,8 +253,9 @@ Subcommands without structured output (`init`, `update run`,
 | `Initialiser` | trait | 0.1.0 |
 | `runtime::{install_tracing, bind_shutdown_signals, LogFormat}` | module | 0.1.0 |
 | `builtins::{VersionCmd, DoctorCmd, InitCmd, ConfigShowCmd}` | structs | 0.1.0 |
-| `render::{OutputMode, output}` | enum + fn | 0.4.0 |
+| `render::{OutputMode, output, strip_global_output}` | enum + fn + helper | 0.4.0 |
 | Global `--output text\|json` flag | clap arg | 0.4.0 |
+| `credentials::CredentialsCmd` (registered) | struct | 0.4.0 |
 | `prelude` | module (re-exports) | 0.1.0 |
 
 ## Deferred to later versions

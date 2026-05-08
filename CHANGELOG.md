@@ -72,6 +72,31 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   `credentials list` subcommand prints an empty table rather than
   erroring out. `NoCredentials` ships as a convenience zero-sized
   type for explicit "no credentials configured" wiring.
+- **`Resolver::probe`** + **`ResolutionSource`** + **`ResolutionOutcome`**
+  on `rtb-credentials`. `probe` walks the same chain as `resolve`
+  but returns the precedence layer (or `Missing` /
+  `LiteralRefusedInCi`) without surfacing the secret. Used by
+  `credentials list` and `doctor` to report where each credential
+  comes from; uses one keychain round-trip per ref but never
+  prints secrets to the operator's terminal.
+- **`credentials` CLI subtree** (`list / add / remove / test /
+  doctor`) registered on `Feature::Credentials` (default-on).
+  `list` prints a `tabled` table or JSON array of declared
+  credentials and the layer the resolver would pick; `test` calls
+  `Resolver::probe` for one named credential; `doctor` aggregates
+  `test` over all declared credentials and exits non-zero on any
+  miss; `add` and `remove` are interactive (`add` uses an
+  `inquire::Password` masked prompt; refuses literal-only refs per
+  C5 resolution; `remove` errors hard on literal-only refs per C1
+  resolution). `--output text|json` is honoured by the structured
+  leaves; the interactive ones ignore it.
+- **`rtb_cli::render::strip_global_output`** helper — removes the
+  global `--output` flag from an `args_os()` vector before a
+  `subcommand_passthrough` subtree re-parses with its own clap
+  definition. clap's outer `global = true` doesn't reach
+  passthrough subtrees because their post-name tokens are captured
+  as `trailing_var_arg`, so the inner parser would otherwise
+  reject the flag as unknown.
 
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 

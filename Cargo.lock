@@ -4352,6 +4352,7 @@ dependencies = [
  "async-trait",
  "clap",
  "cucumber",
+ "inquire",
  "insta",
  "linkme",
  "miette",
@@ -4489,6 +4490,7 @@ dependencies = [
  "predicates",
  "rtb",
  "semver",
+ "serde_json",
  "tokio",
 ]
 
