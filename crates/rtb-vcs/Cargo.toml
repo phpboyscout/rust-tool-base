@@ -41,8 +41,8 @@ integration = []
 _http = ["dep:reqwest", "dep:serde_json", "dep:bytes", "dep:futures-util", "dep:tokio-util"]
 
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.2.0" }
-rtb-error = { path = "../rtb-error", version = "0.2.0" }
+rtb-app = { path = "../rtb-app", version = "0.3.0" }
+rtb-error = { path = "../rtb-error", version = "0.3.0" }
 
 # Async + trait plumbing
 tokio = { workspace = true }

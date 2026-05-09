@@ -17,8 +17,8 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.2.0" }
-rtb-error = { path = "../rtb-error", version = "0.2.0" }
+rtb-app = { path = "../rtb-app", version = "0.3.0" }
+rtb-error = { path = "../rtb-error", version = "0.3.0" }
 rmcp = { workspace = true }
 tokio = { workspace = true }
 async-trait = { workspace = true }

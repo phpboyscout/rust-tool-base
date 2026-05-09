@@ -4262,7 +4262,7 @@ dependencies = [
 
 [[package]]
 name = "rtb"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "rtb-ai",
  "rtb-app",
@@ -4281,7 +4281,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-ai"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4307,7 +4307,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-app"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bon",
@@ -4330,7 +4330,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-assets"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "cucumber",
  "insta",
@@ -4347,7 +4347,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-cli"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "clap",
@@ -4379,7 +4379,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-cli-bin"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "clap",
  "inquire",
@@ -4396,7 +4396,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-config"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "arc-swap",
  "cucumber",
@@ -4417,7 +4417,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-credentials"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "cucumber",
@@ -4434,7 +4434,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-docs"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "axum",
@@ -4472,7 +4472,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-error"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "cucumber",
  "insta",
@@ -4484,7 +4484,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-example-minimal"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "assert_cmd",
  "async-trait",
@@ -4499,7 +4499,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-mcp"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "clap",
@@ -4520,7 +4520,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-redact"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "cucumber",
  "once_cell",
@@ -4531,7 +4531,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-telemetry"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "cucumber",
@@ -4560,7 +4560,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-test-support"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "rtb-app",
  "rtb-assets",
@@ -4571,7 +4571,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-tui"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bon",
@@ -4587,7 +4587,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-update"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "base64 0.22.1",
@@ -4618,7 +4618,7 @@ dependencies = [
 
 [[package]]
 name = "rtb-vcs"
-version = "0.2.0"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bytes",
