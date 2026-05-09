@@ -84,6 +84,31 @@ where
         ConfigBuilder::new()
     }
 
+    /// Construct a [`Config`] holding `value` directly, with no
+    /// figment sources behind it.
+    ///
+    /// Primarily useful in tests and for the
+    /// `rtb_test_support::TestAppBuilder::config_value` shortcut —
+    /// production tools should reach for [`Self::builder`] so layered
+    /// defaults / user files / env vars all participate.
+    ///
+    /// Calling [`Self::reload`] on the result re-parses the empty
+    /// source set, which (for `C: Default`-shaped types) overwrites
+    /// the stored value with `C::default()` and (for everything
+    /// else) returns a parse error. Tests that need stable values
+    /// across a reload should use [`Self::builder`] with an
+    /// `embedded_default`.
+    #[must_use]
+    pub fn with_value(value: C) -> Self {
+        let initial = Arc::new(value);
+        let (tx, _rx) = watch::channel(Arc::clone(&initial));
+        Self {
+            current: Arc::new(ArcSwap::from(initial)),
+            tx: Arc::new(tx),
+            sources: Arc::new(Sources::default()),
+        }
+    }
+
     /// Snapshot the currently-stored value. Cheap — no parse.
     ///
     /// Calls that hold the returned `Arc<C>` across a [`Self::reload`]

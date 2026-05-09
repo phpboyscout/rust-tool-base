@@ -46,11 +46,11 @@ use std::sync::Arc;
 
 use rtb_app::app::App;
 use rtb_app::metadata::ToolMetadata;
+use rtb_app::typed_config::{erase, ErasedConfig, TypedConfigOps};
 use rtb_app::version::VersionInfo;
 use rtb_assets::Assets;
 use rtb_config::Config;
 use semver::Version;
-use tokio_util::sync::CancellationToken;
 
 mod sealed {
     /// Crate-private trait. Only [`super::TestWitness`] may
@@ -86,12 +86,26 @@ pub struct TestAppBuilder<W: sealed::Sealed> {
     _witness: W,
     metadata: Option<ToolMetadata>,
     version: Option<VersionInfo>,
+    /// Captured at builder time when `config` / `config_value` is
+    /// called. Mirrors the production
+    /// `rtb_cli::ApplicationBuilder::config<C>` step so tests can
+    /// exercise the schema-aware `App::config_schema` /
+    /// `App::config_value` / `App::typed_config<C>` paths without
+    /// pulling in the full `rtb-cli` wiring.
+    typed_config: Option<ErasedConfig>,
+    typed_config_ops: Option<Arc<TypedConfigOps>>,
 }
 
 impl TestAppBuilder<TestWitness> {
     /// Start building with a witness.
     pub const fn new(witness: TestWitness) -> Self {
-        Self { _witness: witness, metadata: None, version: None }
+        Self {
+            _witness: witness,
+            metadata: None,
+            version: None,
+            typed_config: None,
+            typed_config_ops: None,
+        }
     }
 
     /// Convenience: set name + version-string in one call.
@@ -114,19 +128,56 @@ impl TestAppBuilder<TestWitness> {
         self
     }
 
+    /// Wire a fully-formed [`Config<C>`] — the full-fidelity match
+    /// for the production `rtb_cli::ApplicationBuilder::config<C>`.
+    /// Use this when the test needs to drive layered defaults /
+    /// overrides through `Config<C>` itself (e.g. a `Config::builder`
+    /// chain with an `embedded_default` plus a `user_file` override).
+    ///
+    /// For the common case where the test only cares about a single
+    /// merged value, prefer [`Self::config_value`] which wraps `c`
+    /// in a `Config<C>` for you.
+    pub fn config<C>(mut self, config: Config<C>) -> Self
+    where
+        C: serde::Serialize
+            + serde::de::DeserializeOwned
+            + schemars::JsonSchema
+            + Send
+            + Sync
+            + 'static,
+    {
+        let ops = TypedConfigOps::new::<C>();
+        self.typed_config = Some(erase(config));
+        self.typed_config_ops = Some(Arc::new(ops));
+        self
+    }
+
+    /// Wire `c` as the merged typed-config value — the ergonomic
+    /// shortcut for tests that just want `app.typed_config::<C>()`
+    /// to return `Arc<Config<C>>` carrying `c`. Internally wraps `c`
+    /// in [`Config::with_value`].
+    pub fn config_value<C>(self, c: C) -> Self
+    where
+        C: serde::Serialize
+            + serde::de::DeserializeOwned
+            + schemars::JsonSchema
+            + Send
+            + Sync
+            + 'static,
+    {
+        self.config(Config::<C>::with_value(c))
+    }
+
     /// Finalise. Panics if neither `tool` nor explicit `metadata`/
     /// `version` supplied — tests should be explicit.
     #[must_use]
     pub fn build(self) -> App {
         let metadata = self.metadata.expect("TestAppBuilder: metadata not set");
         let version = self.version.expect("TestAppBuilder: version not set");
-        App {
-            metadata: Arc::new(metadata),
-            version: Arc::new(version),
-            config: Arc::new(Config::<()>::default()),
-            assets: Arc::new(Assets::default()),
-            shutdown: CancellationToken::new(),
-            credentials_provider: None,
+        let app = App::new(metadata, version, Config::<()>::default(), Assets::default(), None);
+        match (self.typed_config, self.typed_config_ops) {
+            (Some(erased), Some(ops)) => app.with_typed_config(erased, ops),
+            _ => app,
         }
     }
 }

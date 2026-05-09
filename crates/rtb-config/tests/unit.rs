@@ -47,6 +47,32 @@ fn t1_config_unit_is_default() {
 }
 
 // ---------------------------------------------------------------------
+// T1b — Config::with_value wraps a pre-built C
+// ---------------------------------------------------------------------
+
+#[test]
+fn t1b_config_with_value_holds_value() {
+    let cfg = Config::<Sample>::with_value(Sample {
+        host: "h".into(),
+        port: 4242,
+        http: HttpSection::default(),
+    });
+    // Clone first, then exercise both handles — confirms the
+    // cloned handle observes the same backing value (every field
+    // is Arc-wrapped).
+    let cfg2 = cfg.clone();
+
+    let s = cfg.get();
+    assert_eq!(s.host, "h");
+    assert_eq!(s.port, 4242);
+
+    let s2 = cfg2.get();
+    assert_eq!(s2.host, "h");
+    assert_eq!(s2.port, 4242);
+    assert!(Arc::ptr_eq(&s, &s2), "clone shares the backing allocation");
+}
+
+// ---------------------------------------------------------------------
 // T2 — Config<T> is Send + Sync + Clone
 // ---------------------------------------------------------------------
 

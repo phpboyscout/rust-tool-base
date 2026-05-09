@@ -22,3 +22,5 @@ rtb-config = { path = "../rtb-config", version = "0.3.0" }
 rtb-assets = { path = "../rtb-assets", version = "0.3.0" }
 tokio-util = { workspace = true }
 semver = { workspace = true }
+serde = { workspace = true }
+schemars = { workspace = true }

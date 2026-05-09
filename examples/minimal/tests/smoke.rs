@@ -297,12 +297,48 @@ fn config_defaults_to_show() {
     bin().args(["config"]).assert().success();
 }
 
-// --- Contract: `config schema` errors clearly without typed config ----
+// --- Contract: `config schema` succeeds when a typed config is wired --
 
 #[test]
-fn config_schema_errors_without_typed_config() {
-    // Per the v0.4 contract, schema requires a typed-config wiring
-    // that downstream tools provide. Until App<C> lands, the
-    // subcommand surfaces a help-laden error.
-    bin().args(["config", "schema"]).assert().failure();
+fn config_schema_emits_schema_for_typed_config() {
+    let output = bin().args(["config", "schema"]).output().expect("config schema");
+    assert!(output.status.success(), "exit non-zero: {output:?}");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let parsed: serde_json::Value = serde_json::from_str(stdout.trim()).expect("schema is JSON");
+    assert!(parsed.is_object(), "schema is a JSON object: {parsed:?}");
+    // The example's AppConfig declares `greeting` and `repeat` —
+    // both should appear in the generated schema.
+    let s = parsed.to_string();
+    assert!(s.contains("greeting"), "schema mentions greeting: {s}");
+    assert!(s.contains("repeat"), "schema mentions repeat: {s}");
+}
+
+// --- Contract: `config show` renders the merged typed config ---------
+
+#[test]
+fn config_show_renders_typed_config_value() {
+    let output = bin().args(["config", "show"]).output().expect("config show");
+    assert!(output.status.success(), "exit non-zero: {output:?}");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    // Default greeting is "hello"; default repeat is 1.
+    assert!(stdout.contains("greeting"), "show output mentions greeting: {stdout}");
+    assert!(stdout.contains("hello"), "show output mentions default greeting value: {stdout}");
+    assert!(stdout.contains("repeat"), "show output mentions repeat: {stdout}");
+}
+
+// --- Contract: `config get` reads a single field path ----------------
+
+#[test]
+fn config_get_reads_a_field() {
+    let output = bin().args(["config", "get", "greeting"]).output().expect("config get");
+    assert!(output.status.success(), "exit non-zero: {output:?}");
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    assert!(stdout.contains("hello"), "get output is the default value: {stdout}");
+}
+
+// --- Contract: `config validate` accepts the wired default value -----
+
+#[test]
+fn config_validate_accepts_default_typed_config() {
+    bin().args(["config", "validate"]).assert().success();
 }

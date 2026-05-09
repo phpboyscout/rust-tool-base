@@ -9,6 +9,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::credentials::{list_or_empty, CredentialProvider};
 use crate::metadata::ToolMetadata;
+use crate::typed_config::{erase, ErasedConfig, TypedConfigOps};
 use crate::version::VersionInfo;
 
 /// Strongly-typed application context threaded through every command handler.
@@ -34,7 +35,18 @@ pub struct App {
     /// Build-time version information.
     pub version: Arc<VersionInfo>,
     /// Layered configuration (figment-backed, `serde::Deserialize`-typed).
-    pub config: Arc<Config>,
+    ///
+    /// The field is type-erased — direct access surfaces nothing
+    /// useful. Reach the typed handle through [`Self::typed_config`]
+    /// or [`Self::config_as`] (per the v0.4.1 scope addendum, A2
+    /// resolution). Defaults to `Arc<Config<()>>` when no
+    /// `Application::builder().config(...)` was wired.
+    ///
+    /// Stored as `Arc<dyn Any + Send + Sync>` rather than `Arc<dyn
+    /// SomeTrait>` so [`Arc::downcast`] preserves the same backing
+    /// allocation when recovering the typed `Arc<Config<C>>` —
+    /// `App::clone()` ↔ `App::typed_config()` chains share Arcs.
+    pub(crate) config: ErasedConfig,
     /// Virtual filesystem overlay: embedded defaults + user overrides.
     pub assets: Arc<Assets>,
     /// Root cancellation token propagated to every subsystem. Derive
@@ -47,9 +59,63 @@ pub struct App {
     /// on their typed config — `App::credentials` returns an empty
     /// list in that case so the subtree degrades gracefully.
     pub credentials_provider: Option<Arc<dyn CredentialProvider>>,
+    /// Schema + render closures for the wired typed config. `Some`
+    /// when the host tool called `Application::builder().config(c)`
+    /// with a `C` that implements `Serialize + JsonSchema`; `None`
+    /// for the v0.4 raw-YAML fallback path. Drives the
+    /// schema-aware `config show / get / set / schema / validate`
+    /// leaves in `rtb-cli`.
+    pub(crate) typed_config_ops: Option<Arc<TypedConfigOps>>,
 }
 
 impl App {
+    /// Production constructor. Used by
+    /// `rtb_cli::Application::builder().build()`; downstream code
+    /// reaches `App` via `Application::run`'s dispatch path. Tests
+    /// should use `rtb_test_support::TestAppBuilder` (which calls
+    /// here under the hood with the test value wrapped in a
+    /// `Config<C>`).
+    ///
+    /// `C` is the tool's typed config type. Passing
+    /// `Config::<()>::default()` works for tools that haven't typed
+    /// their config yet — the `AnyConfig` blanket impl over
+    /// `Config<C>` covers `C = ()` so the call still satisfies the
+    /// trait bound.
+    #[must_use]
+    pub fn new<C>(
+        metadata: ToolMetadata,
+        version: VersionInfo,
+        config: Config<C>,
+        assets: Assets,
+        credentials_provider: Option<Arc<dyn CredentialProvider>>,
+    ) -> Self
+    where
+        C: serde::de::DeserializeOwned + Send + Sync + 'static,
+    {
+        Self {
+            metadata: Arc::new(metadata),
+            version: Arc::new(version),
+            config: erase(config),
+            assets: Arc::new(assets),
+            shutdown: CancellationToken::new(),
+            credentials_provider,
+            typed_config_ops: None,
+        }
+    }
+
+    /// Attach a typed-config bundle to the `App` — used by
+    /// `rtb_cli::Application::builder().config<C>(...)` after
+    /// constructing a basic `App` via [`Self::new`]. Replaces the
+    /// erased config storage with `erased` and attaches the
+    /// schema/render ops. The two are paired by the builder so
+    /// callers can't accidentally mismatch them.
+    #[must_use]
+    pub fn with_typed_config(mut self, erased: ErasedConfig, ops: Arc<TypedConfigOps>) -> Self {
+        self.config = erased;
+        self.typed_config_ops = Some(ops);
+        self
+    }
+
     /// Test-only constructor. Assembles an `App` from fresh defaults
     /// for the `assets`/`config` placeholders and the supplied
     /// `metadata`/`version`. The resulting `shutdown` token is a fresh
@@ -63,14 +129,7 @@ impl App {
     #[doc(hidden)]
     #[must_use]
     pub fn for_testing(metadata: ToolMetadata, version: VersionInfo) -> Self {
-        Self {
-            metadata: Arc::new(metadata),
-            version: Arc::new(version),
-            config: Arc::new(Config::<()>::default()),
-            assets: Arc::new(Assets::default()),
-            shutdown: CancellationToken::new(),
-            credentials_provider: None,
-        }
+        Self::new(metadata, version, Config::<()>::default(), Assets::default(), None)
     }
 
     /// Yield the configured credentials. Returns an empty `Vec` when
@@ -80,5 +139,80 @@ impl App {
     #[must_use]
     pub fn credentials(&self) -> Vec<(String, CredentialRef)> {
         list_or_empty(self.credentials_provider.as_ref())
+    }
+
+    /// Typed access to the wired configuration. Returns
+    /// `Some(Arc<Config<C>>)` when `Application::builder().config(...)`
+    /// was called with a `Config<C>`; `None` otherwise.
+    ///
+    /// The downcast is a single `Any::downcast_ref` round-trip —
+    /// safe to call once at the top of every command body without
+    /// caching.
+    ///
+    /// # Errors
+    ///
+    /// Infallible — returns `None` on type mismatch rather than
+    /// panicking. See [`Self::config_as`] for the panicking
+    /// counterpart.
+    #[must_use]
+    pub fn typed_config<C>(&self) -> Option<Arc<Config<C>>>
+    where
+        C: serde::de::DeserializeOwned + Send + Sync + 'static,
+    {
+        // `Arc::clone` increments the refcount on the type-erased
+        // trait object; `Arc::downcast::<Config<C>>` reinterprets
+        // it as the concrete type. The returned `Arc<Config<C>>`
+        // shares the *same* backing allocation, so `Arc::ptr_eq`
+        // round-trips across `App::clone()` ↔
+        // `App::typed_config::<C>()`.
+        Arc::clone(&self.config).downcast::<Config<C>>().ok()
+    }
+
+    /// Typed access to the wired configuration; panics when no
+    /// matching typed config is wired.
+    ///
+    /// The panic message names the requested type so the failure
+    /// is self-diagnosing. Use this from command bodies that
+    /// already know the host tool wired its typed config at startup
+    /// — for example, the same crate that called
+    /// `Application::builder().config(...)`.
+    ///
+    /// # Panics
+    ///
+    /// When `App::typed_config::<C>()` returns `None`. Surfaces
+    /// the call-site location via `#[track_caller]`.
+    #[must_use]
+    #[track_caller]
+    pub fn config_as<C>(&self) -> Arc<Config<C>>
+    where
+        C: serde::de::DeserializeOwned + Send + Sync + 'static,
+    {
+        self.typed_config::<C>().unwrap_or_else(|| {
+            panic!(
+                "App::config_as::<{}>() — no matching typed config wired \
+                 (did `Application::builder().config(...)` get called \
+                 with the right type?)",
+                std::any::type_name::<C>(),
+            )
+        })
+    }
+
+    /// JSON Schema for the wired typed config. `None` when no
+    /// typed-config ops were attached (i.e. the host tool did not
+    /// call `Application::builder().config(c)`). Used by the
+    /// `rtb-cli` `config schema / validate` subcommands to drive
+    /// schema-aware behaviour without knowing the tool's `C` type.
+    #[must_use]
+    pub fn config_schema(&self) -> Option<&serde_json::Value> {
+        self.typed_config_ops.as_ref().map(|ops| &ops.schema)
+    }
+
+    /// Merged typed-config value rendered as a `serde_json::Value`.
+    /// `None` when no typed-config ops were attached. Used by the
+    /// `rtb-cli` `config show / get` subcommands to read the
+    /// merged config without knowing `C`.
+    #[must_use]
+    pub fn config_value(&self) -> Option<serde_json::Value> {
+        self.typed_config_ops.as_ref().and_then(|ops| ops.render(&self.config))
     }
 }

@@ -4270,6 +4270,7 @@ dependencies = [
  "rtb-config",
  "rtb-credentials",
  "rtb-error",
+ "schemars 1.2.1",
  "semver",
  "serde",
  "serde_json",
@@ -4306,6 +4307,7 @@ dependencies = [
  "directories",
  "inquire",
  "insta",
+ "jsonschema",
  "linkme",
  "miette",
  "rtb-app",
@@ -4315,6 +4317,7 @@ dependencies = [
  "rtb-error",
  "rtb-telemetry",
  "rtb-tui",
+ "schemars 1.2.1",
  "semver",
  "serde",
  "serde_json",
@@ -4443,7 +4446,9 @@ dependencies = [
  "miette",
  "predicates",
  "rtb",
+ "schemars 1.2.1",
  "semver",
+ "serde",
  "serde_json",
  "tokio",
 ]
@@ -4516,7 +4521,9 @@ dependencies = [
  "rtb-app",
  "rtb-assets",
  "rtb-config",
+ "schemars 1.2.1",
  "semver",
+ "serde",
  "tokio-util",
 ]
 

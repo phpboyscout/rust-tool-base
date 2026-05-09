@@ -38,11 +38,16 @@ handlers explicitly.
 
 ## Design rationale
 
-- **No `App<C>` generic yet.** The framework spec called for
-  `App<C: AppConfig>` so commands could access typed config. v0.1
-  ships non-generic `App`; `rtb-config`'s `Config<C = ()>`
-  default-parameter makes the common case work without forcing the
-  generic onto every consumer.
+- **Type-erased typed config (since 0.4.1).** The framework spec
+  called for `App<C: AppConfig>` so commands could access typed
+  config. Rather than make `App` generic (which would force every
+  `Command` impl through a `dyn`-incompatible boundary), v0.4.1
+  stores the config type-erased and exposes
+  `App::typed_config::<C>() -> Option<Arc<Config<C>>>` and
+  `App::config_as::<C>() -> Arc<Config<C>>` (panicking) as the
+  recovery seam. See the
+  [v0.4.1 scope addendum](../development/specs/2026-05-09-v0.4.1-scope.md)
+  §3 for the option-(a) rationale.
 - **`linkme` over runtime registration.** `BUILTIN_COMMANDS` is a
   `#[distributed_slice]` populated at link time. No life-before-main,
   no mutex-guarded registry, no per-command `Arc<Mutex<...>>`. It
@@ -60,18 +65,44 @@ handlers explicitly.
 pub struct App {
     pub metadata: Arc<ToolMetadata>,
     pub version:  Arc<VersionInfo>,
-    pub config:   Arc<Config>,      // Config<()> by default
+    // Type-erased since 0.4.1: reach the typed handle through
+    // `typed_config::<C>()` or `config_as::<C>()`. Stored as
+    // `Arc<dyn Any + Send + Sync>` so `Arc::downcast` recovers the
+    // typed `Arc<Config<C>>` sharing the same backing allocation.
+    pub(crate) config: ErasedConfig,
     pub assets:   Arc<Assets>,
     pub shutdown: CancellationToken,
     pub credentials_provider: Option<Arc<dyn CredentialProvider>>, // since 0.4.0
+    pub(crate) typed_config_ops: Option<Arc<TypedConfigOps>>,      // since 0.4.1
 }
 
 impl App {
+    /// Typed access to the wired configuration. `Some` when
+    /// `Application::builder().config(...)` was called with a
+    /// `Config<C>`; `None` otherwise.
+    pub fn typed_config<C>(&self) -> Option<Arc<Config<C>>>
+    where C: serde::de::DeserializeOwned + Send + Sync + 'static; // since 0.4.1
+
+    /// Same as `typed_config`, but panics with a diagnostic naming
+    /// the requested type when no matching typed config is wired.
+    /// Surfaces the call-site location via `#[track_caller]`.
+    pub fn config_as<C>(&self) -> Arc<Config<C>>
+    where C: serde::de::DeserializeOwned + Send + Sync + 'static; // since 0.4.1
+
+    /// JSON Schema for the wired typed config. `None` when no
+    /// typed-config ops were attached. Drives `config schema /
+    /// validate` in `rtb-cli`.
+    pub fn config_schema(&self) -> Option<&serde_json::Value>;     // since 0.4.1
+
+    /// Merged typed-config value rendered as a `serde_json::Value`.
+    /// Drives `config show / get` in `rtb-cli`.
+    pub fn config_value(&self) -> Option<serde_json::Value>;       // since 0.4.1
+
     /// Yield the configured credentials. Returns `Vec::new()` when
     /// no provider has been wired — `credentials list` reports the
     /// empty set, which is the right thing for a tool that hasn't
     /// declared any credentials yet.
-    pub fn credentials(&self) -> Vec<(String, CredentialRef)>;  // since 0.4.0
+    pub fn credentials(&self) -> Vec<(String, CredentialRef)>;     // since 0.4.0
 }
 ```
 
@@ -341,8 +372,15 @@ built-in) and the framework's default falls away.
 |---|---|---|
 | `App` | struct | 0.1.0 |
 | `App::for_testing` | fn (`#[doc(hidden)]`) | 0.1.0 |
+| `App::new` | fn (public constructor) | 0.4.1 |
+| `App::with_typed_config` | method | 0.4.1 |
+| `App::typed_config<C>` | method | 0.4.1 |
+| `App::config_as<C>` | method (panicking) | 0.4.1 |
+| `App::config_schema` | method | 0.4.1 |
+| `App::config_value` | method | 0.4.1 |
 | `App::credentials` | method | 0.4.0 |
 | `App::credentials_provider` | optional `Arc<dyn CredentialProvider>` field | 0.4.0 |
+| `typed_config::{ErasedConfig, TypedConfigOps, erase}` | type alias + struct + fn | 0.4.1 |
 | `credentials::{CredentialProvider, NoCredentials}` | trait + struct | 0.4.0 |
 | `ToolMetadata` | struct + `bon::Builder` | 0.1.0 |
 | `ToolMetadata::telemetry_notice` | `Option<&'static str>` field | 0.4.0 |
@@ -366,7 +404,7 @@ re-export is convenience, not sufficient).
 
 | Crate | Uses |
 |---|---|
-| [rtb-config](rtb-config.md) | `App.config` holds `Arc<Config<()>>`. |
+| [rtb-config](rtb-config.md) | `App.config` is type-erased `Arc<dyn Any + Send + Sync>` storage; the typed `Arc<Config<C>>` is recovered via `App::typed_config::<C>()`. |
 | [rtb-assets](rtb-assets.md) | `App.assets` holds `Arc<Assets>`. |
 | [rtb-cli](rtb-cli.md) | Builds the `App`; registers built-in commands. |
 | Every downstream command | Implements `Command`; reads `app.metadata`, `app.version`. |

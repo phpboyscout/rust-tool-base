@@ -37,10 +37,11 @@ reload** flow. Hot reload via `notify` and a reactive
   `Arc<C>` snapshot; a concurrent reload swaps the stored value
   without tearing. Readers that held a pre-reload snapshot keep
   their view until they ask for a new one.
-- **`Config<C = ()>` default generic.** Downstream code that
-  holds an `Arc<Config>` (notably `rtb-app`'s `App.config`)
-  resolves to `Arc<Config<()>>` without an explicit type parameter.
-  Typed-config-needing callers use `Config<MyConfig>`.
+- **`Config<C = ()>` default generic.** Callers that don't care
+  about the typed shape can write `Config` and get `Config<()>`.
+  Typed-config-needing callers use `Config<MyConfig>` and reach
+  it through `App::typed_config::<MyConfig>()` after wiring it
+  via `Application::builder().config(...)` (since 0.4.1).
 - **No dynamic `Sub()` / `GetString()` accessors.** Access is
   through struct fields. Hierarchical access uses nested `Deserialize`
   structs. Profile selection uses `figment::select` (deferred to v0.2).
@@ -238,8 +239,8 @@ assert_eq!(cfg.get().port, 9999);
 
 | Crate | Uses |
 |---|---|
-| [rtb-app](rtb-app.md) | `App.config` holds `Arc<Config<()>>`. |
-| [rtb-cli](rtb-cli.md) | `Application::build` constructs a `Config<()>` default; downstream tools with typed config override. |
+| [rtb-app](rtb-app.md) | `App.config` is type-erased storage; the typed `Arc<Config<C>>` is recovered via `App::typed_config::<C>()` (since 0.4.1). |
+| [rtb-cli](rtb-cli.md) | `Application::builder().config<C>(...)` wires a typed `Config<C>` (since 0.4.1); without it, `App` carries an internal `Config<()>` placeholder. |
 | [rtb-credentials](rtb-credentials.md) | `CredentialRef` deserialises from config. |
 
 ## Testing
@@ -260,7 +261,8 @@ assert_eq!(cfg.get().port, 9999);
 ## Related
 
 - [Configuration](../concepts/configuration.md) — concept-level overview.
-- [rtb-app](rtb-app.md) — where `App.config` lives.
+- [rtb-app](rtb-app.md) — where typed-config storage and the
+  `App::typed_config<C>` / `App::config_as<C>` recovery seam live.
 
 [figment]: https://crates.io/crates/figment
 [arc-swap]: https://crates.io/crates/arc-swap

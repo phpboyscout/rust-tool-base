@@ -38,11 +38,15 @@ overkill. `rtb-test-support` is the bypass path — opt-in via
 - **`[dev-dependencies]` placement.** Production binaries that
   only depend on `rtb-app` + `rtb-cli` do not compile
   `rtb-test-support` in, and cannot reach `TestAppBuilder` at all.
-- **Honest caveat.** `rtb_app::App` has `pub` fields, so any
-  crate depending on `rtb-app` can construct an `App` via
-  struct literal directly. The seal is a speed-bump + visibility
-  signal, not watertight access control. Closing that gap requires
-  a `pub(crate)` refactor of `App`'s fields; scheduled for v0.2+.
+- **Honest caveat (partly closed in 0.4.1).** `rtb_app::App` had
+  `pub` fields at v0.1, so any crate depending on `rtb-app` could
+  construct an `App` via struct literal directly. Since 0.4.1 the
+  type-erased `config` and `typed_config_ops` fields are
+  `pub(crate)` (per the v0.4.1 scope addendum, A2 resolution); the
+  remaining `pub` fields (metadata / version / assets / shutdown
+  / credentials_provider) stay public for callsite ergonomics. The
+  seal is still primarily a speed-bump + visibility signal rather
+  than watertight access control.
 
 ## Core types
 
@@ -70,6 +74,15 @@ impl TestAppBuilder<TestWitness> {
     pub fn metadata(self, m: ToolMetadata) -> Self;         // override just metadata
     pub fn version(self, v: VersionInfo) -> Self;           // override just version
 
+    // Typed-config wiring (since 0.4.1). `config` matches the
+    // production `Application::builder().config<C>(...)` for full
+    // fidelity; `config_value` is the ergonomic shortcut that
+    // wraps `c` in `Config::<C>::with_value(c)`.
+    pub fn config<C>(self, config: Config<C>) -> Self
+    where C: Serialize + DeserializeOwned + JsonSchema + Send + Sync + 'static;
+    pub fn config_value<C>(self, c: C) -> Self
+    where C: Serialize + DeserializeOwned + JsonSchema + Send + Sync + 'static;
+
     pub fn build(self) -> App;                              // panics on missing required
 }
 ```
@@ -81,6 +94,7 @@ impl TestAppBuilder<TestWitness> {
 | `TestWitness` | struct | 0.1.0 |
 | `TestAppBuilder<W>` | struct (generic, sealed) | 0.1.0 |
 | `TestAppBuilder::{new, tool, metadata, version, build}` | methods | 0.1.0 |
+| `TestAppBuilder::{config, config_value}` | methods (typed-config wiring) | 0.4.1 |
 
 ## Usage
 
