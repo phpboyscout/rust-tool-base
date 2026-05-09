@@ -12,7 +12,25 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed — `schemars` 0.8 → 1.x
+
+- Workspace `schemars` pin moved from `0.8` to `1`. `rmcp` 0.16
+  already requires `schemars 1.0+` so this collapses our lockfile
+  duplication (we were carrying both versions).
+- `rtb-config`'s `mutable` feature: `Config::schema()` now uses
+  the re-exported top-level `schemars::SchemaGenerator` (the old
+  `schemars::r#gen::SchemaGenerator` path was renamed to
+  `schemars::generate::SchemaGenerator` in 1.x and re-exported).
+  `root_schema_for::<C>()` keeps the same signature; `serde_json`
+  serialisation is unchanged.
+- `rtb-ai`'s `chat_structured::<T>` continues to use
+  `schemars::schema_for!(T)` — the macro is unchanged in 1.x.
+- Downstream tools deriving `JsonSchema` on their config structs
+  see a few field-attribute renames (e.g. some `#[schemars(...)]`
+  argument forms are tighter); the `#[derive(JsonSchema)]` itself
+  is source-compatible. See the
+  [`schemars` 1.0 migration guide](https://graham.cool/schemars/migrating/0.8-to-1.0/)
+  for the full diff.
 
 ## [0.3.0] — 2026-05-09
 
