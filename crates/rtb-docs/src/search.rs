@@ -150,7 +150,11 @@ impl SearchIndex {
             // loudly — the user can't always control what they type.
             return Ok(Vec::new());
         };
-        let top_docs = searcher.search(&parsed, &TopDocs::with_limit(limit))?;
+        // tantivy 0.26: `TopDocs::with_limit` no longer impls
+        // `Collector` directly — must compose with an ordering. Use
+        // `.order_by_score()` for the same default-relevance behaviour
+        // we had under 0.22.
+        let top_docs = searcher.search(&parsed, &TopDocs::with_limit(limit).order_by_score())?;
         let mut out = Vec::with_capacity(top_docs.len());
         for (score, doc_address) in top_docs {
             let retrieved: TantivyDocument = searcher.doc(doc_address)?;
