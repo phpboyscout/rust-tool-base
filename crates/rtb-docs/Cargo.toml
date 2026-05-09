@@ -24,11 +24,11 @@ default = []
 ai = ["dep:rtb-ai", "dep:futures-util", "dep:secrecy"]
 
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.2.0" }
-rtb-error = { path = "../rtb-error", version = "0.2.0" }
-rtb-assets = { path = "../rtb-assets", version = "0.2.0" }
-rtb-cli = { path = "../rtb-cli", version = "0.2.0" }
-rtb-ai = { path = "../rtb-ai", version = "0.2.0", optional = true }
+rtb-app = { path = "../rtb-app", version = "0.3.0" }
+rtb-error = { path = "../rtb-error", version = "0.3.0" }
+rtb-assets = { path = "../rtb-assets", version = "0.3.0" }
+rtb-cli = { path = "../rtb-cli", version = "0.3.0" }
+rtb-ai = { path = "../rtb-ai", version = "0.3.0", optional = true }
 
 # TUI
 ratatui = { workspace = true }

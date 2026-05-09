@@ -12,6 +12,56 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.3.0] — 2026-05-09
+
+The "operator surface" release. Bundles the framework-spec v0.3
+milestone (AI client + MCP server) and the v0.4 milestone (TUI
+building blocks + CLI ops subtree) into one shipped version.
+Headline additions:
+
+- **MCP server** — every RTB-built tool can now expose its
+  registered commands as Model Context Protocol tools via
+  `Command::mcp_exposed`; `mcp serve / list` ship as built-ins.
+- **AI client** — `rtb-ai` v0.1 wraps `genai` (Claude / OpenAI /
+  Gemini / Ollama) plus an Anthropic-direct path for prompt
+  caching and extended thinking.
+- **TUI building blocks** — `Wizard` (multi-step interactive form
+  with escape-to-back navigation), `render_table` / `render_json`
+  helpers, TTY-aware `Spinner`. Powers the new ops subtree.
+- **Operator subtrees** — `credentials list / add / remove / test
+  / doctor`, `telemetry status / enable / disable / reset`,
+  `config show / get / set / schema / validate`, and a global
+  `--output text|json` flag declared once with `clap::Arg::global`.
+- **Cross-cutting framework primitives** — `App::credentials_provider`,
+  `Resolver::probe`, `rtb-config` `mutable` Cargo feature
+  (`Config::schema` / `Config::write`), `rtb-telemetry::consent`
+  module (persisted opt-in at `<config_dir>/<tool>/consent.toml`),
+  `Command::{mcp_exposed, mcp_input_schema}` default trait methods.
+
+See the spec set under `docs/development/specs/2026-05-*` for the
+authoritative per-crate contracts and the `2026-05-01-v0.3-scope.md`
+/ `2026-05-06-v0.4-scope.md` addenda for the slice ordering and
+open-question resolutions.
+
+### Behaviour changes
+
+- **`mcp list --output json`** now emits a single JSON array of
+  tool descriptors instead of one JSON object per line. The v0.3
+  NDJSON form was an expedient before the global `--output` flag
+  existed; consumers scripting against it migrate by piping
+  through `jq -s`.
+
+### Caveats
+
+The 0.3.0 release does not yet include `App<C>` typed-config
+generic integration. Practical impact: `config schema` errors with
+help-laden text until that work lands; `config get / set / validate`
+operate against the canonical user-file directly rather than
+through `Config<C>`. The `mutable` Cargo feature on `rtb-config` is
+ready to plumb through once the typed-config glue exists.
+
 ### Added — `rtb-cli` ops subtree v0.1 (slice 2 of v0.4)
 
 - **`CredentialBearing` trait** in `rtb-credentials`. Downstream
@@ -158,6 +208,42 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   false, features = ["cli", ...]` are unaffected.
 - **`WizardError`** + **`RenderError`** — both `#[non_exhaustive]`,
   both `Clone`, both `miette::Diagnostic`-deriving.
+
+### Added — `rtb-ai` v0.1 (slice 1B of v0.3)
+
+- **`rtb-ai`** flips from a stub to a real crate. Typed `AiClient`
+  façade over [`genai`](https://crates.io/crates/genai) (OpenAI,
+  Gemini, Ollama, OpenAI-compatible) plus a direct `reqwest` path
+  for Anthropic that unlocks prompt caching, extended thinking,
+  and citations. `Provider` enum carries six variants
+  (`Anthropic`, `AnthropicLocal`, `OpenAi`, `OpenAiCompatible`,
+  `Gemini`, `Ollama`); `Config::default()` is
+  `Anthropic + claude-opus-4-7 + 60 s` (per the v0.3 scope O2
+  resolution).
+- **`AiClient::chat / chat_stream / chat_structured::<T>`** —
+  the third validates against a `schemars`-derived JSON Schema
+  on the response via `jsonschema`. `ChatRequest` carries
+  `cache_control` / `thinking` Anthropic-only fields that are
+  silently ignored on other providers.
+- **`docs ask`** subcommand wired through the AI client (when the
+  `ai` Cargo feature is on).
+- **PAT-authenticated `update`** — `update check / run` now
+  resolve the configured `release_credential` through
+  `Resolver::with_platform_default` and pass the PAT to
+  `rtb-vcs`'s release providers, unblocking private-repo updates.
+
+### Added — v0.3 slice 1A (foundation)
+
+- **`ReleaseSource`** on `rtb_app` expands from 3 → 6 variants to
+  match `rtb-vcs::ReleaseSourceConfig`. Adds `Bitbucket`, `Gitea`,
+  `Codeberg`. `#[non_exhaustive]`, so this is a
+  minor-version-compatible addition. `rtb-update`'s
+  `release_source_to_config` mapper wires each new variant
+  through.
+- **`Resolver::with_platform_default()`** + `impl Default for
+  Resolver` — one-line constructor that wraps `KeyringStore::new()`
+  in an `Arc`. Saves the boilerplate at every PAT-resolving
+  callsite (rtb-vcs, rtb-update, rtb-ai).
 
 ### Added — `rtb-mcp` v0.1 (slice 2 of v0.3)
 

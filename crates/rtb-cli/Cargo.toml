@@ -17,13 +17,13 @@ keywords.workspace = true
 workspace = true
 
 [dependencies]
-rtb-app = { path = "../rtb-app", version = "0.2.0" }
-rtb-error = { path = "../rtb-error", version = "0.2.0" }
-rtb-config = { path = "../rtb-config", version = "0.2.0" }
-rtb-assets = { path = "../rtb-assets", version = "0.2.0" }
-rtb-credentials = { path = "../rtb-credentials", version = "0.2.0" }
-rtb-telemetry = { path = "../rtb-telemetry", version = "0.2.0" }
-rtb-tui = { path = "../rtb-tui", version = "0.2.0" }
+rtb-app = { path = "../rtb-app", version = "0.3.0" }
+rtb-error = { path = "../rtb-error", version = "0.3.0" }
+rtb-config = { path = "../rtb-config", version = "0.3.0" }
+rtb-assets = { path = "../rtb-assets", version = "0.3.0" }
+rtb-credentials = { path = "../rtb-credentials", version = "0.3.0" }
+rtb-telemetry = { path = "../rtb-telemetry", version = "0.3.0" }
+rtb-tui = { path = "../rtb-tui", version = "0.3.0" }
 clap = { workspace = true }
 tokio = { workspace = true }
 tokio-util = { workspace = true }
