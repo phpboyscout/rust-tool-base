@@ -9,45 +9,61 @@
 //! $ cargo run -p rtb-example-minimal -- credentials list
 //! $ cargo run -p rtb-example-minimal -- telemetry status
 //! $ cargo run -p rtb-example-minimal -- config show
+//! $ cargo run -p rtb-example-minimal -- config schema
 //! ```
 //!
 //! This exercises the v0.1–v0.4 built-in commands plus a custom
 //! `greet` command registered via the `linkme` distributed slice
 //! pattern. The v0.4 `credentials` subtree is wired against a tiny
-//! `MyConfig` struct that declares two credential refs (anthropic,
-//! github), demonstrating the
-//! `Application::builder().credentials_from(...)` opt-in.
+//! `MyCredentials` struct that declares two credential refs
+//! (anthropic, github), demonstrating the
+//! `Application::builder().credentials_from(...)` opt-in. The v0.4.1
+//! `App<C>` typed-config integration is wired via
+//! `Application::builder().config(...)` against an `AppConfig`
+//! struct, which lights up the schema-aware paths in
+//! `config show / get / schema / validate`.
 
 use std::sync::Arc;
 
 use async_trait::async_trait;
 use linkme::distributed_slice;
+use rtb::config::Config;
 use rtb::core::app::App;
 use rtb::core::command::{Command, CommandSpec, BUILTIN_COMMANDS};
 use rtb::prelude::*;
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
 // =====================================================================
-// Sample tool config — declares two credentials so `credentials list`
-// has something to show.
+// Sample tool credentials — the `credentials list / test / doctor`
+// subtree consumes this through `Application::builder()
+// .credentials_from(Arc::new(MyCredentials { ... }))`.
+//
+// Kept separate from the typed `AppConfig` below because
+// `CredentialRef` deliberately does not derive `Serialize` (it
+// carries `SecretString`s) and so cannot live inside a
+// `JsonSchema + Serialize`-bound typed config without a wrapping /
+// redaction layer. Real downstream tools either go the same split
+// route or layer a `Serialize`-safe wrapper on top of
+// `CredentialRef` themselves.
 // =====================================================================
 
-/// Tool config. In a real downstream tool this is the
-/// `serde::Deserialize` struct passed as `Config<MyConfig>`; here
-/// we just declare its credentials directly.
+/// Tool credentials. Holds two [`CredentialRef`]s so `credentials list`
+/// has something to show.
 #[derive(Default, Clone)]
-struct MyConfig {
+struct MyCredentials {
     anthropic: CredentialRef,
     github: CredentialRef,
 }
 
-impl CredentialBearing for MyConfig {
+impl CredentialBearing for MyCredentials {
     fn credentials(&self) -> Vec<(&'static str, &CredentialRef)> {
         vec![("anthropic", &self.anthropic), ("github", &self.github)]
     }
 }
 
-fn sample_config() -> MyConfig {
-    MyConfig {
+fn sample_credentials() -> MyCredentials {
+    MyCredentials {
         anthropic: CredentialRef {
             env: Some("MINIMAL_ANTHROPIC_API_KEY".to_string()),
             fallback_env: Some("ANTHROPIC_API_KEY".to_string()),
@@ -59,6 +75,40 @@ fn sample_config() -> MyConfig {
             ..Default::default()
         },
     }
+}
+
+// =====================================================================
+// Sample typed config — what the v0.4.1
+// `Application::builder().config<C>(...)` step expects. Drives
+// `config show`, `config get`, `config schema`, and
+// `config validate`.
+// =====================================================================
+
+/// Typed application config. The `Serialize + Deserialize +
+/// JsonSchema` derives are required by the
+/// `Application::builder().config<C>(...)` bound.
+#[derive(Default, Clone, Serialize, Deserialize, JsonSchema)]
+struct AppConfig {
+    /// Greeting prefix used by the `greet` command. A trivial field
+    /// so the schema surface has something visible.
+    #[serde(default = "default_greeting")]
+    greeting: String,
+    /// Maximum number of times to repeat the greeting. Demonstrates a
+    /// numeric field for `config get`/`config validate`.
+    #[serde(default = "default_repeat")]
+    repeat: u8,
+}
+
+fn default_greeting() -> String {
+    "hello".to_string()
+}
+
+const fn default_repeat() -> u8 {
+    1
+}
+
+fn sample_config() -> AppConfig {
+    AppConfig { greeting: default_greeting(), repeat: default_repeat() }
 }
 
 // =====================================================================
@@ -111,7 +161,8 @@ async fn main() -> miette::Result<()> {
                 .build(),
         )
         .version(VersionInfo::from_env())
-        .credentials_from(Arc::new(sample_config()))
+        .credentials_from(Arc::new(sample_credentials()))
+        .config(Config::<AppConfig>::with_value(sample_config()))
         .build()?
         .run()
         .await

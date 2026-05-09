@@ -265,27 +265,40 @@ fn run_schema(app: &App) -> miette::Result<()> {
 // ---------------------------------------------------------------------
 
 fn run_validate(app: &App, override_path: Option<&Path>) -> miette::Result<()> {
-    let file = match override_path {
-        Some(p) => p.to_path_buf(),
-        None => canonical_path(app)?,
+    // Three sources for the candidate value, in order of preference:
+    //
+    // 1. `--config-file <PATH>` — explicit override always wins; an
+    //    absent file is an error.
+    // 2. No override + typed config wired — validate the in-memory
+    //    merged value (matches the spec "Defaults to the merged
+    //    result" wording).
+    // 3. No override + no typed config — fall back to the canonical
+    //    user file; absent file is an error (the v0.4 untyped path).
+    let (value, label): (serde_json::Value, String) = if let Some(p) = override_path {
+        if !p.exists() {
+            return Err(miette!("config file `{}` does not exist", p.display()));
+        }
+        (read_value(p)?, format!("`{}`", p.display()))
+    } else if let Some(merged) = app.config_value() {
+        (merged, "merged config".to_string())
+    } else {
+        let p = canonical_path(app)?;
+        if !p.exists() {
+            return Err(miette!("config file `{}` does not exist", p.display()));
+        }
+        let label = format!("`{}`", p.display());
+        (read_value(&p)?, label)
     };
-    if !file.exists() {
-        return Err(miette!("config file `{}` does not exist", file.display()));
-    }
-    let value = read_value(&file)?;
-    // Schema-aware path when typed config is wired: parse the
-    // candidate file as `serde_json::Value` and validate against
-    // the schema. v0.4 fallback (no typed wiring) just confirms
-    // the file parses cleanly.
+
     if let Some(schema) = app.config_schema() {
         let validator =
             jsonschema::validator_for(schema).map_err(|e| miette!("compile schema: {e}"))?;
         if let Err(error) = validator.validate(&value) {
-            return Err(miette!("config validation failed at `{}`: {error}", file.display(),));
+            return Err(miette!("config validation failed at {label}: {error}"));
         }
-        println!("ok: `{}` validates against the wired schema", file.display());
+        println!("ok: {label} validates against the wired schema");
     } else {
-        println!("ok: `{}` parses cleanly (no schema wired — format check only)", file.display());
+        println!("ok: {label} parses cleanly (no schema wired — format check only)");
     }
     Ok(())
 }
