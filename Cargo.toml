@@ -103,7 +103,7 @@ crossterm = "0.28"
 termimad = "0.33"
 inquire = "0.8"
 owo-colors = "4"
-console = "0.15"
+console = "0.16"
 tabled = { version = "0.20", features = ["derive"] }
 
 # Secrets
