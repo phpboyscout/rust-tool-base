@@ -43,16 +43,19 @@ pub enum ConfigError {
     Watch(String),
 
     /// Serialisation or filesystem failure when writing the merged
-    /// value back to disk via [`crate::Config::write`]. Constructable
-    /// only when the `mutable` feature is enabled, but the variant
-    /// is unconditional so consumers' `match` arms stay cfg-clean.
+    /// value back to disk via `Config::write`. Constructable only
+    /// when the `mutable` feature is enabled, but the variant is
+    /// unconditional so consumers' `match` arms stay cfg-clean.
+    /// (`Config::write` is cfg-gated; the intra-doc link would
+    /// only resolve under `--features mutable` doc builds.)
     #[error("config write error: {0}")]
     #[diagnostic(code(rtb::config::write))]
     Write(String),
 
-    /// Schema-validation failure during a [`crate::Config::write`]
+    /// Schema-validation failure during a `Config::write`
     /// candidate-validation step, or any other consumer that
-    /// validates against [`crate::Config::schema`].
+    /// validates against `Config::schema`. Cfg-gated; see the
+    /// `Write` variant's note about doc-link resolution.
     #[error("config schema violation: {0}")]
     #[diagnostic(code(rtb::config::schema))]
     Schema(String),
