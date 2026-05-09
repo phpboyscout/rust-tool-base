@@ -110,6 +110,11 @@ pub struct ApplicationBuilder<M, V> {
     features: Option<Features>,
     install_hooks: bool,
     credentials_provider: Option<Arc<dyn rtb_app::credentials::CredentialProvider>>,
+    /// Captured at builder time when `config<C>` is called: the
+    /// erased `Config<C>` storage and the closure-based ops bundle
+    /// that drives schema-aware `config_cmd` paths.
+    typed_config: Option<rtb_app::typed_config::ErasedConfig>,
+    typed_config_ops: Option<Arc<rtb_app::typed_config::TypedConfigOps>>,
 }
 
 impl ApplicationBuilder<NoMetadata, NoVersion> {
@@ -122,6 +127,8 @@ impl ApplicationBuilder<NoMetadata, NoVersion> {
             features: None,
             install_hooks: true,
             credentials_provider: None,
+            typed_config: None,
+            typed_config_ops: None,
         }
     }
 }
@@ -142,6 +149,8 @@ impl<V> ApplicationBuilder<NoMetadata, V> {
             features: self.features,
             install_hooks: self.install_hooks,
             credentials_provider: self.credentials_provider,
+            typed_config: self.typed_config,
+            typed_config_ops: self.typed_config_ops,
         }
     }
 }
@@ -156,6 +165,8 @@ impl<M> ApplicationBuilder<M, NoVersion> {
             features: self.features,
             install_hooks: self.install_hooks,
             credentials_provider: self.credentials_provider,
+            typed_config: self.typed_config,
+            typed_config_ops: self.typed_config_ops,
         }
     }
 }
@@ -200,6 +211,32 @@ impl<M, V> ApplicationBuilder<M, V> {
             Some(provider as Arc<dyn rtb_app::credentials::CredentialProvider>);
         self
     }
+
+    /// Wire a typed config so command handlers can reach it via
+    /// `app.typed_config::<C>()` and the framework-supplied
+    /// `config show / get / set / schema / validate` subcommands
+    /// drive their schema-aware paths.
+    ///
+    /// The `JsonSchema` bound is required (per v0.4.1 scope A3
+    /// resolution) so the schema-aware leaves work for everyone
+    /// who opts in. Tools with non-`JsonSchema`-able config shapes
+    /// can keep the v0.4 raw-YAML fallback by *not* calling this
+    /// step; the rest of the framework continues to work
+    /// unchanged.
+    pub fn config<C>(mut self, config: rtb_config::Config<C>) -> Self
+    where
+        C: serde::Serialize
+            + serde::de::DeserializeOwned
+            + schemars::JsonSchema
+            + Send
+            + Sync
+            + 'static,
+    {
+        let ops = rtb_app::typed_config::TypedConfigOps::new::<C>();
+        self.typed_config = Some(rtb_app::typed_config::erase(config));
+        self.typed_config_ops = Some(Arc::new(ops));
+        self
+    }
 }
 
 impl ApplicationBuilder<HasMetadata, HasVersion> {
@@ -213,8 +250,17 @@ impl ApplicationBuilder<HasMetadata, HasVersion> {
         let features = self.features.unwrap_or_default();
         let assets = self.assets.unwrap_or_default();
 
+        // Build a basic App via the public constructor; if
+        // `.config(...)` was called the typed-config bundle gets
+        // attached afterwards (replacing the placeholder
+        // `Config<()>` storage with the same allocation
+        // `ApplicationBuilder::config<C>` set up).
         let app =
             App::new(metadata, version, Config::<()>::default(), assets, self.credentials_provider);
+        let app = match (self.typed_config, self.typed_config_ops) {
+            (Some(erased), Some(ops)) => app.with_typed_config(erased, ops),
+            _ => app,
+        };
 
         // Materialise BUILTIN_COMMANDS filtered by the runtime
         // Features set.

@@ -9,7 +9,7 @@ use tokio_util::sync::CancellationToken;
 
 use crate::credentials::{list_or_empty, CredentialProvider};
 use crate::metadata::ToolMetadata;
-use crate::typed_config::{erase, ErasedConfig};
+use crate::typed_config::{erase, ErasedConfig, TypedConfigOps};
 use crate::version::VersionInfo;
 
 /// Strongly-typed application context threaded through every command handler.
@@ -59,6 +59,13 @@ pub struct App {
     /// on their typed config — `App::credentials` returns an empty
     /// list in that case so the subtree degrades gracefully.
     pub credentials_provider: Option<Arc<dyn CredentialProvider>>,
+    /// Schema + render closures for the wired typed config. `Some`
+    /// when the host tool called `Application::builder().config(c)`
+    /// with a `C` that implements `Serialize + JsonSchema`; `None`
+    /// for the v0.4 raw-YAML fallback path. Drives the
+    /// schema-aware `config show / get / set / schema / validate`
+    /// leaves in `rtb-cli`.
+    pub(crate) typed_config_ops: Option<Arc<TypedConfigOps>>,
 }
 
 impl App {
@@ -92,7 +99,21 @@ impl App {
             assets: Arc::new(assets),
             shutdown: CancellationToken::new(),
             credentials_provider,
+            typed_config_ops: None,
         }
+    }
+
+    /// Attach a typed-config bundle to the `App` — used by
+    /// `rtb_cli::Application::builder().config<C>(...)` after
+    /// constructing a basic `App` via [`Self::new`]. Replaces the
+    /// erased config storage with `erased` and attaches the
+    /// schema/render ops. The two are paired by the builder so
+    /// callers can't accidentally mismatch them.
+    #[must_use]
+    pub fn with_typed_config(mut self, erased: ErasedConfig, ops: Arc<TypedConfigOps>) -> Self {
+        self.config = erased;
+        self.typed_config_ops = Some(ops);
+        self
     }
 
     /// Test-only constructor. Assembles an `App` from fresh defaults
@@ -174,5 +195,24 @@ impl App {
                 std::any::type_name::<C>(),
             )
         })
+    }
+
+    /// JSON Schema for the wired typed config. `None` when no
+    /// typed-config ops were attached (i.e. the host tool did not
+    /// call `Application::builder().config(c)`). Used by the
+    /// `rtb-cli` `config schema / validate` subcommands to drive
+    /// schema-aware behaviour without knowing the tool's `C` type.
+    #[must_use]
+    pub fn config_schema(&self) -> Option<&serde_json::Value> {
+        self.typed_config_ops.as_ref().map(|ops| &ops.schema)
+    }
+
+    /// Merged typed-config value rendered as a `serde_json::Value`.
+    /// `None` when no typed-config ops were attached. Used by the
+    /// `rtb-cli` `config show / get` subcommands to read the
+    /// merged config without knowing `C`.
+    #[must_use]
+    pub fn config_value(&self) -> Option<serde_json::Value> {
+        self.typed_config_ops.as_ref().and_then(|ops| ops.render(&self.config))
     }
 }

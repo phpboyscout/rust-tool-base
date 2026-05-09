@@ -85,10 +85,7 @@ impl Command for ConfigCmd {
         let mode = OutputMode::from_args_os();
         let sub = cli.command.unwrap_or(ConfigSub::Show(ShowOpts {}));
         match sub {
-            ConfigSub::Show(_) => {
-                run_show(&app);
-                Ok(())
-            }
+            ConfigSub::Show(_) => run_show(&app),
             ConfigSub::Get { path } => run_get(&app, &path, mode),
             ConfigSub::Set { path, value, config_file } => {
                 run_set(&app, &path, &value, config_file.as_deref())
@@ -151,14 +148,20 @@ struct ShowOpts {}
 // `show`
 // ---------------------------------------------------------------------
 
-fn run_show(_app: &App) {
-    // App.config is currently Config<()> — the typed-config generic
-    // App<C> is post-v0.1 work. Keep the v0.1 placeholder text until
-    // it lands; downstream tools with a real `C` register their own
-    // impl of this command (last-in-slice-order wins) just like in
-    // the v0.1 baseline.
+fn run_show(app: &App) -> miette::Result<()> {
+    if let Some(value) = app.config_value() {
+        // Typed config wired — render as YAML for human reading.
+        let yaml = serde_yaml::to_string(&value).map_err(|e| miette!("yaml: {e}"))?;
+        print!("{yaml}");
+        return Ok(());
+    }
+    // No typed config wired — keep the v0.4 placeholder text.
+    // Downstream tools that don't call
+    // `Application::builder().config(...)` see this; tools that do
+    // hit the typed path above.
     println!("# no typed configuration is installed on this App");
-    println!("# (rtb-app's App.config is Config<()> until App<C> lands)");
+    println!("# (call `Application::builder().config(C)` to wire it)");
+    Ok(())
 }
 
 // ---------------------------------------------------------------------
@@ -166,12 +169,20 @@ fn run_show(_app: &App) {
 // ---------------------------------------------------------------------
 
 fn run_get(app: &App, path: &str, mode: OutputMode) -> miette::Result<()> {
-    let file = canonical_path(app)?;
-    let value = read_value(&file)?;
+    // Prefer the typed-config-rendered value when wired — it
+    // reflects the merged Config<C> that the tool actually sees,
+    // including embedded defaults and env-var overlays. Fall back
+    // to the v0.4 user-file walk for tools without typed wiring.
+    let (value, source) = if let Some(value) = app.config_value() {
+        (value, "merged config".to_string())
+    } else {
+        let file = canonical_path(app)?;
+        let value = read_value(&file)?;
+        (value, format!("`{}`", file.display()))
+    };
     let pointer = json_pointer(path);
-    let resolved = value
-        .pointer(&pointer)
-        .ok_or_else(|| miette!("path `{path}` not found in `{}`", file.display()))?;
+    let resolved =
+        value.pointer(&pointer).ok_or_else(|| miette!("path `{path}` not found in {source}"))?;
     match mode {
         OutputMode::Json => {
             println!(
@@ -210,6 +221,20 @@ fn run_set(app: &App, path: &str, value: &str, override_path: Option<&Path>) -> 
     let pointer = json_pointer(path);
     set_pointer(&mut current, &pointer, parsed).map_err(|msg| miette!("{msg}"))?;
 
+    // Schema-aware write: when typed config is wired, refuse to
+    // persist a candidate the schema rejects. The check runs
+    // against the merged value rather than the user-file alone so
+    // a bad set against env-driven defaults still gets caught.
+    if let Some(schema) = app.config_schema() {
+        let validator =
+            jsonschema::validator_for(schema).map_err(|e| miette!("compile schema: {e}"))?;
+        if let Err(error) = validator.validate(&current) {
+            return Err(miette!(
+                "config set rejected: candidate value at `{path}` fails the wired schema: {error}",
+            ));
+        }
+    }
+
     write_value(&file, &current)?;
     println!("set `{path}` in `{}`", file.display());
     Ok(())
@@ -219,14 +244,17 @@ fn run_set(app: &App, path: &str, value: &str, override_path: Option<&Path>) -> 
 // `schema`
 // ---------------------------------------------------------------------
 
-fn run_schema(_app: &App) -> miette::Result<()> {
-    // Without `App<C>` we have no typed schema to emit. Tools with
-    // their own typed config can override this subcommand by
-    // registering a `Command` with the same name later in slice
-    // order — the same replacement pattern documented for `show`.
+fn run_schema(app: &App) -> miette::Result<()> {
+    if let Some(schema) = app.config_schema() {
+        let json = serde_json::to_string_pretty(schema).map_err(|e| miette!("json: {e}"))?;
+        println!("{json}");
+        return Ok(());
+    }
+    // No typed config wired — same fallback as v0.4.
     Err(miette!(
-        help = "wire your typed config via Application::builder().config(...) once App<C> lands; \
-                until then, override the `config` command with your own impl that calls \
+        help = "wire your typed config via Application::builder().config(...). \
+                Without typed-config wiring there is no schema to emit; \
+                downstream tools that override the `config` command can call \
                 rtb_config::Config::schema()",
         "config schema is not available without a typed-config integration"
     ))
@@ -244,10 +272,21 @@ fn run_validate(app: &App, override_path: Option<&Path>) -> miette::Result<()> {
     if !file.exists() {
         return Err(miette!("config file `{}` does not exist", file.display()));
     }
-    // v0.4 contract without `App<C>`: format-parse only. Schema
-    // validation lands when typed-config integration is wired.
-    let _ = read_value(&file)?;
-    println!("ok: `{}` parses cleanly", file.display());
+    let value = read_value(&file)?;
+    // Schema-aware path when typed config is wired: parse the
+    // candidate file as `serde_json::Value` and validate against
+    // the schema. v0.4 fallback (no typed wiring) just confirms
+    // the file parses cleanly.
+    if let Some(schema) = app.config_schema() {
+        let validator =
+            jsonschema::validator_for(schema).map_err(|e| miette!("compile schema: {e}"))?;
+        if let Err(error) = validator.validate(&value) {
+            return Err(miette!("config validation failed at `{}`: {error}", file.display(),));
+        }
+        println!("ok: `{}` validates against the wired schema", file.display());
+    } else {
+        println!("ok: `{}` parses cleanly (no schema wired — format check only)", file.display());
+    }
     Ok(())
 }
 
