@@ -18,14 +18,14 @@ where
     ///
     /// Used by `rtb-cli`'s `config schema` subcommand and by
     /// `config get / set` for path validation. Generated via
-    /// `schemars::SchemaGenerator` at call time — there is no
+    /// [`schemars::SchemaGenerator`] at call time — there is no
     /// caching at v0.4; the call is cheap and infrequent (a CLI
     /// startup-grade operation).
     #[must_use]
     pub fn schema() -> serde_json::Value {
-        let mut generator = schemars::r#gen::SchemaGenerator::default();
+        let mut generator = schemars::SchemaGenerator::default();
         let schema = generator.root_schema_for::<C>();
-        // `to_value` over a derived `RootSchema` is infallible —
+        // `to_value` over a derived `Schema` is infallible —
         // every field is a primitive, a string, or a nested
         // object. Fall back to `Value::Null` defensively rather
         // than panicking.
