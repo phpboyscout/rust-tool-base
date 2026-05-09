@@ -32,6 +32,18 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
   [`schemars` 1.0 migration guide](https://graham.cool/schemars/migrating/0.8-to-1.0/)
   for the full diff.
 
+### Changed — `tantivy` 0.22 → 0.26
+
+- Workspace `tantivy` pin moved 0.22 → 0.26 (closes the dependabot
+  PR that couldn't merge mechanically across four breaking minor
+  releases).
+- `rtb-docs/src/search.rs`: `TopDocs::with_limit(N)` no longer
+  implements `Collector` directly in 0.23+; the call site now
+  composes `TopDocs::with_limit(limit).order_by_score()` for the
+  same default-relevance behaviour we had under 0.22. Single
+  one-line change in the search loop; doc index format and
+  query-parser surface are unchanged.
+
 ## [0.3.0] — 2026-05-09
 
 The "operator surface" release. Bundles the framework-spec v0.3
