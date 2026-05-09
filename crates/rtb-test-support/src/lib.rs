@@ -42,15 +42,12 @@
 
 #![forbid(unsafe_code)]
 
-use std::sync::Arc;
-
 use rtb_app::app::App;
 use rtb_app::metadata::ToolMetadata;
 use rtb_app::version::VersionInfo;
 use rtb_assets::Assets;
 use rtb_config::Config;
 use semver::Version;
-use tokio_util::sync::CancellationToken;
 
 mod sealed {
     /// Crate-private trait. Only [`super::TestWitness`] may
@@ -120,13 +117,6 @@ impl TestAppBuilder<TestWitness> {
     pub fn build(self) -> App {
         let metadata = self.metadata.expect("TestAppBuilder: metadata not set");
         let version = self.version.expect("TestAppBuilder: version not set");
-        App {
-            metadata: Arc::new(metadata),
-            version: Arc::new(version),
-            config: Arc::new(Config::<()>::default()),
-            assets: Arc::new(Assets::default()),
-            shutdown: CancellationToken::new(),
-            credentials_provider: None,
-        }
+        App::new(metadata, version, Config::<()>::default(), Assets::default(), None)
     }
 }

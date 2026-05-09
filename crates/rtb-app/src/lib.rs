@@ -15,6 +15,7 @@ pub mod command;
 pub mod credentials;
 pub mod features;
 pub mod metadata;
+pub mod typed_config;
 pub mod version;
 
 /// Re-exported so downstream `#[distributed_slice]` users can use

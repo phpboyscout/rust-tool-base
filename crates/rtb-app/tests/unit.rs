@@ -51,8 +51,14 @@ fn t2_clone_shares_arcs() {
 
     assert!(Arc::ptr_eq(&orig.metadata, &clone.metadata), "metadata Arc not shared");
     assert!(Arc::ptr_eq(&orig.version, &clone.version), "version Arc not shared");
-    assert!(Arc::ptr_eq(&orig.config, &clone.config), "config Arc not shared");
     assert!(Arc::ptr_eq(&orig.assets, &clone.assets), "assets Arc not shared");
+    // The config field is `pub(crate)` after the v0.4.1 type-erased
+    // refactor. Confirm Arc-sharing through the public downcast
+    // accessor instead — `typed_config` uses `Arc::downcast` which
+    // preserves the underlying allocation.
+    let orig_cfg = orig.typed_config::<()>().expect("Config<()> downcast");
+    let clone_cfg = clone.typed_config::<()>().expect("Config<()> downcast");
+    assert!(Arc::ptr_eq(&orig_cfg, &clone_cfg), "config Arc not shared via typed_config");
 }
 
 // ---------------------------------------------------------------------

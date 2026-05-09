@@ -12,7 +12,6 @@ use rtb_app::metadata::ToolMetadata;
 use rtb_app::version::VersionInfo;
 use rtb_assets::Assets;
 use rtb_config::Config;
-use tokio_util::sync::CancellationToken;
 
 use crate::runtime::{self, LogFormat};
 
@@ -214,14 +213,8 @@ impl ApplicationBuilder<HasMetadata, HasVersion> {
         let features = self.features.unwrap_or_default();
         let assets = self.assets.unwrap_or_default();
 
-        let app = App {
-            metadata: Arc::new(metadata),
-            version: Arc::new(version),
-            config: Arc::new(Config::<()>::default()),
-            assets: Arc::new(assets),
-            shutdown: CancellationToken::new(),
-            credentials_provider: self.credentials_provider,
-        };
+        let app =
+            App::new(metadata, version, Config::<()>::default(), assets, self.credentials_provider);
 
         // Materialise BUILTIN_COMMANDS filtered by the runtime
         // Features set.
