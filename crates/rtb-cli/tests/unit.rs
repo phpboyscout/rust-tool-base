@@ -186,23 +186,14 @@ async fn t9_init_iterates_registered() {
 }
 
 // ---------------------------------------------------------------------
-// T12 — config show
+// T12 — retired in v0.4. The bare `config` command became a
+// `subcommand_passthrough` subtree (`show / get / set / schema /
+// validate`) whose inner parser reads `std::env::args_os()` rather
+// than the args supplied to `run_with_args`. End-to-end coverage of
+// the new subtree lives in `examples/minimal/tests/smoke.rs` —
+// `config_help_lists_subcommands`, `config_defaults_to_show`,
+// `config_schema_errors_without_typed_config`.
 // ---------------------------------------------------------------------
-
-#[tokio::test]
-async fn t12_config_show_enabled_by_feature() {
-    let features = Features::builder().enable(Feature::Config).build();
-    let app = Application::builder()
-        .metadata(sample_metadata())
-        .version(sample_version())
-        .features(features)
-        .install_hooks(false)
-        .build()
-        .expect("build");
-
-    let result = app.run_with_args(["mytool", "config"]).await;
-    assert!(result.is_ok(), "config dispatch failed: {result:?}");
-}
 
 // ---------------------------------------------------------------------
 // Extra — HealthStatus constructors + is_fail

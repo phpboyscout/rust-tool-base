@@ -133,44 +133,9 @@ fn __register_init() -> Box<dyn Command> {
     Box::new(InitCmd)
 }
 
-// =====================================================================
-// config — show merged configuration as YAML.
-// =====================================================================
-
-/// The `config show` subcommand (v0.1 — only the `show` leaf).
-pub struct ConfigShowCmd;
-
-#[async_trait]
-impl Command for ConfigShowCmd {
-    fn spec(&self) -> &CommandSpec {
-        static SPEC: CommandSpec = CommandSpec {
-            name: "config",
-            about: "Show the currently-resolved configuration",
-            aliases: &[],
-            feature: Some(Feature::Config),
-        };
-        &SPEC
-    }
-
-    async fn run(&self, _app: App) -> miette::Result<()> {
-        // rtb-config v0.1 holds a parsed value behind `Arc<C>`. The
-        // framework-level App currently carries `Arc<Config<()>>`, so
-        // the only thing we can show here is "no typed config
-        // registered". Downstream tools with a real C will override
-        // this command by registering their own impl with the same
-        // name later in registration order.
-        println!("# no typed configuration is installed on this App");
-        println!("# (rtb-app's App.config is Config<()> until App<C> lands)");
-        Ok(())
-    }
-}
-
-#[distributed_slice(BUILTIN_COMMANDS)]
-fn __register_config() -> Box<dyn Command> {
-    Box::new(ConfigShowCmd)
-}
-
-// The `update`, `docs`, and `mcp` stubs have been removed —
+// The `config` subtree (show / get / set / schema / validate) lives
+// in `crate::config_cmd`. The `update`, `docs`, and `mcp` stubs have
+// been removed —
 // `rtb-update`, `rtb-docs`, and `rtb-mcp` register the real
 // commands. Downstream tools that disable the corresponding rtb
 // features still get the stub-equivalent behaviour: no command

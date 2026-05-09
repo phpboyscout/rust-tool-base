@@ -171,10 +171,12 @@ runtime `Features` set.
 | `version` | `Version` | Prints name/semver/commit/date + target triple. |
 | `doctor` | `Doctor` | Runs `HEALTH_CHECKS`; exits non-zero if any `Fail`. |
 | `init` | `Init` | Iterates `INITIALISERS`; skips already-configured. |
-| `config` | `Config` (opt-in) | Shows the resolved typed config. |
+| `config` | `Config` | v0.4 — moved into the default-on set. Subcommands `show` (default) / `get` / `set` / `schema` / `validate`. Operates on the canonical user-file path `<config_dir>/<tool>/config.yaml` (override via `--config-file PATH`). |
 | `update` | `Update` | Registered by [`rtb-update`](rtb-update.md) v0.1. Subcommands `check` / `run`. |
 | `docs` | `Docs` | Registered by [`rtb-docs`](rtb-docs.md) v0.1. Subcommands `list` / `show` / `browse` / `serve` / `ask`. |
 | `mcp` | `Mcp` | Registered by [`rtb-mcp`](rtb-mcp.md) v0.1. Subcommands `serve` / `list`. |
+| `credentials` | `Credentials` | v0.4. Subcommands `list` / `add` / `remove` / `test` / `doctor`. Backed by `App::credentials_provider` and `rtb-credentials`'s `Resolver` / `KeyringStore`. |
+| `telemetry` | `Telemetry` | v0.4 — moved into the default-on set. Subcommands `status` / `enable` / `disable` / `reset`. Backed by `rtb_telemetry::consent` (file at `<config_dir>/<tool>/consent.toml`). `enable` refuses under `CI=true`. |
 
 ### Replacing a built-in
 
@@ -208,18 +210,55 @@ impl Command for MyUpdate {
 fn __register_update() -> Box<dyn Command> { Box::new(MyUpdate) }
 ```
 
+## Output rendering — `--output text|json` (since 0.4.0)
+
+A global `--output text|json` flag is declared once at the root of
+the clap tree with `Arg::global(true)` and propagates to every
+subcommand. Both forms parse identically:
+
+```text
+mytool --output json subcommand
+mytool subcommand --output json
+```
+
+Subcommands that print structured data honour the flag through the
+`rtb_cli::render` module:
+
+```rust
+use rtb_cli::{OutputMode, render};
+
+let mode = OutputMode::from_args_os();   // re-parse for passthrough subtrees
+render::output(mode, &rows)?;             // tabled for Text, JSON for Json
+```
+
+`render::output` wraps `rtb_tui::render_table` (text) and
+`rtb_tui::render_json` (JSON, pretty-printed). Subcommands that
+own their own clap subtree (`subcommand_passthrough = true`)
+re-parse the flag from `std::env::args_os()` via
+`OutputMode::from_args_os` — same pattern those subcommands use
+for their other args.
+
+Subcommands without structured output (`init`, `update run`,
+`mcp serve`) silently ignore the flag.
+
 ## API surface
 
 | Item | Kind | Since |
 |---|---|---|
 | `Application`, `ApplicationBuilder<M, V>` | structs | 0.1.0 |
 | `ApplicationBuilder::{metadata, version, assets, features, install_hooks, build}` | methods | 0.1.0 |
+| `ApplicationBuilder::credentials_from<T: CredentialBearing>` | method | 0.4.0 |
 | `Application::{run, run_with_args}` | async methods | 0.1.0 |
 | `HealthCheck`, `HealthStatus`, `HealthReport` | trait + types | 0.1.0 |
 | `HEALTH_CHECKS`, `INITIALISERS` | `linkme` distributed slices | 0.1.0 |
 | `Initialiser` | trait | 0.1.0 |
 | `runtime::{install_tracing, bind_shutdown_signals, LogFormat}` | module | 0.1.0 |
-| `builtins::{VersionCmd, DoctorCmd, InitCmd, ConfigShowCmd}` | structs | 0.1.0 |
+| `builtins::{VersionCmd, DoctorCmd, InitCmd}` | structs | 0.1.0 |
+| `render::{OutputMode, output, strip_global_output}` | enum + fn + helper | 0.4.0 |
+| Global `--output text\|json` flag | clap arg | 0.4.0 |
+| `credentials::CredentialsCmd` (registered) | struct | 0.4.0 |
+| `telemetry::TelemetryCmd` (registered) | struct | 0.4.0 |
+| `config_cmd::ConfigCmd` (registered) | struct | 0.4.0 |
 | `prelude` | module (re-exports) | 0.1.0 |
 
 ## Deferred to later versions

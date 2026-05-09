@@ -30,6 +30,7 @@
 
 #![forbid(unsafe_code)]
 
+pub mod consent;
 pub mod context;
 pub mod error;
 pub mod event;
@@ -41,6 +42,7 @@ pub mod http_sink;
 #[cfg(feature = "remote-sinks")]
 pub mod otlp_sink;
 
+pub use consent::{Consent, ConsentState};
 pub use context::{CollectionPolicy, TelemetryContext, TelemetryContextBuilder};
 pub use error::TelemetryError;
 pub use event::Event;

@@ -1,6 +1,6 @@
 ---
 title: rtb-cli ops subtree v0.1 (slice 2 of v0.4)
-status: APPROVED
+status: IMPLEMENTED
 date: 2026-05-06
 authors: [Matt Cockayne]
 crate: rtb-cli
@@ -9,7 +9,13 @@ supersedes: null
 
 # `rtb-cli` ops subtree v0.1 — `credentials` / `telemetry` / `config` extension / `--output`
 
-**Status:** APPROVED — open questions C1–C5 resolved 2026-05-06; cleared for TDD/implementation once [`rtb-tui`](2026-05-06-rtb-tui-v0.1.md) (PR #32) merges to develop.
+**Status:** IMPLEMENTED — landed on `feat/rtb-cli-ops-v0.1` over seven internal commits.
+
+**Caveats vs the spec body** (driven by the still-pending `App<C>` typed-config generic, which is a separate piece of framework work):
+
+- `config get / set / validate` operate against the canonical user-file (`<config_dir>/<tool>/config.yaml`) as a `serde_json::Value` rather than through `Config<C>`. `config schema` errors with help-laden text until `App<C>` lands. The `mutable` feature on `rtb-config` (added in commit 2: `Config::schema` / `Config::write`) is wired and ready to plumb through once the typed-config glue exists.
+- `credentials add` / `remove` interact with the OS keychain via `KeyringStore::new()` directly rather than through a `dyn CredentialStore` injected on `App`. Sufficient for v0.4; store-injection is a v0.5+ ergonomic enhancement.
+- The `Application::builder().read_telemetry_consent()` builder step the spec sketched is implemented inside the `telemetry` subtree itself (the resolution chain runs at `telemetry status` time) rather than being threaded through `TelemetryContext` at construction. Tools wiring telemetry collection re-read the consent file via `rtb_telemetry::consent::read` at startup.
 **Parent contract:** v0.4 scope addendum [`2026-05-06-v0.4-scope.md`](2026-05-06-v0.4-scope.md), §2.2 – §2.5 and §4.1.
 **Depends on:** [`rtb-tui` v0.1](2026-05-06-rtb-tui-v0.1.md) — `Wizard`, `render_table`, `render_json`, `Spinner`. Slice 2 is gated on slice 1 landing first.
 

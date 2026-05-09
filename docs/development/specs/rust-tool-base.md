@@ -739,12 +739,16 @@ Minimum shippable scope:
   `rtb-mcp` v0.1 (`rmcp` SDK; commands self-register as MCP tools
   via `Command::mcp_exposed`). Structured output via `schemars` +
   `jsonschema`. See [`2026-05-01-v0.3-scope.md`](2026-05-01-v0.3-scope.md).
-
-### Pending
 - **0.4** — `rtb-tui` v0.1 (`Wizard`, table/json render helpers,
   TTY-aware `Spinner`); `rtb-cli` `credentials` / `telemetry` /
   extended `config` subtrees; global `--output text|json` flag.
-  See [`2026-05-06-v0.4-scope.md`](2026-05-06-v0.4-scope.md).
+  `App` gains `credentials_provider` + `App::credentials()`;
+  `rtb-credentials` adds `CredentialBearing` + `Resolver::probe`;
+  `rtb-config` adds the `mutable` feature with `Config::schema` /
+  `Config::write`; `rtb-telemetry` adds the persisted `consent`
+  module. See [`2026-05-06-v0.4-scope.md`](2026-05-06-v0.4-scope.md).
+
+### Pending
 - **0.5** — `rtb-vcs` v0.2 (git-operations slice: the `Repo` type,
   `gix`/`git2` adapters, commit/diff/blame/clone). Extends the crate
   that shipped its release slice at v0.2.

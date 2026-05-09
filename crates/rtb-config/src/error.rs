@@ -41,6 +41,21 @@ pub enum ConfigError {
     #[error("config watcher error: {0}")]
     #[diagnostic(code(rtb::config::watch))]
     Watch(String),
+
+    /// Serialisation or filesystem failure when writing the merged
+    /// value back to disk via [`crate::Config::write`]. Constructable
+    /// only when the `mutable` feature is enabled, but the variant
+    /// is unconditional so consumers' `match` arms stay cfg-clean.
+    #[error("config write error: {0}")]
+    #[diagnostic(code(rtb::config::write))]
+    Write(String),
+
+    /// Schema-validation failure during a [`crate::Config::write`]
+    /// candidate-validation step, or any other consumer that
+    /// validates against [`crate::Config::schema`].
+    #[error("config schema violation: {0}")]
+    #[diagnostic(code(rtb::config::schema))]
+    Schema(String),
 }
 
 impl From<figment::Error> for ConfigError {
