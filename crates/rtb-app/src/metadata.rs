@@ -146,6 +146,13 @@ pub struct ToolMetadata {
     /// a different naming convention set this explicitly.
     #[serde(skip)]
     pub update_asset_pattern: Option<&'static str>,
+
+    /// Privacy notice printed by `rtb-cli`'s v0.4 `telemetry enable`
+    /// subcommand. `None` falls back to a generic message. Lives on
+    /// `ToolMetadata` rather than `rtb-telemetry` so the subcommand
+    /// can read it without depending on the telemetry crate.
+    #[serde(skip)]
+    pub telemetry_notice: Option<&'static str>,
 }
 
 /// User-support channel advertised in error output.

@@ -179,6 +179,45 @@ pub enum TelemetryError {
 }
 ```
 
+## Persisted consent (`consent::*`, since 0.4.0)
+
+Backs `rtb-cli`'s v0.4 `telemetry status / enable / disable / reset`
+subtree. The file lives at `<config_dir>/<tool>/consent.toml`:
+
+```toml
+version = 1
+state = "enabled"   # or "disabled" or "unset"
+decided_at = "2026-05-08T12:34:56Z"
+```
+
+```rust
+use rtb_telemetry::consent::{self, Consent, ConsentState};
+
+// Read on startup. Missing file → Ok(None) → policy fallback.
+let path = config_dir.join("mytool/consent.toml");
+let policy = match consent::read(&path)? {
+    Some(c) => c.state.into(),         // ConsentState → CollectionPolicy
+    None    => CollectionPolicy::Disabled, // opt-in default
+};
+
+// Write on `telemetry enable` / `disable`.
+consent::write(&path, &Consent::enabled_now())?;
+
+// Wipe on `telemetry reset` — idempotent.
+consent::reset(&path)?;
+```
+
+`Consent` carries an explicit schema version (currently `1`) so a
+future format change is non-breaking — `read` rejects unknown
+versions with a `TelemetryError::Serde`. Decisions are timestamped
+in RFC 3339 / ISO 8601 (UTC).
+
+The CLI-side wiring lives in `rtb-cli` — the v0.4 `telemetry`
+subtree (`status / enable / disable / reset`) reads and writes
+this file directly. `rtb-telemetry` ships the file primitives;
+`rtb-cli` does the path resolution (`ProjectDirs::config_dir()`)
+and the user-facing flow.
+
 ## API surface
 
 | Item | Kind | Since |
@@ -189,7 +228,9 @@ pub enum TelemetryError {
 | `TelemetrySink` | async trait | 0.1.0 |
 | `NoopSink`, `MemorySink`, `FileSink` | structs | 0.1.0 |
 | `MachineId::derive` | fn | 0.1.0 |
-| `TelemetryError::{Io, Serde}` | enum | 0.1.0 |
+| `TelemetryError::{Io, Serde, Http, Otlp}` | enum | 0.1.0 / 0.2.0 |
+| `consent::{Consent, ConsentState, read, write, reset}` | module | 0.4.0 |
+| `From<ConsentState> for CollectionPolicy` | impl | 0.4.0 |
 
 ## Usage patterns
 

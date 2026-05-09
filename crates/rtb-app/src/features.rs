@@ -34,6 +34,10 @@ pub enum Feature {
     Config,
     /// Structured release-notes display (`changelog` subcommand).
     Changelog,
+    /// Credential management (`credentials` subcommand subtree).
+    /// Default-on; gates the v0.4 `credentials list / add / remove
+    /// / test / doctor` subcommands.
+    Credentials,
 }
 
 impl Feature {
@@ -64,6 +68,7 @@ impl Feature {
             Self::Telemetry,
             Self::Config,
             Self::Changelog,
+            Self::Credentials,
         ]
     }
 }
@@ -74,9 +79,9 @@ impl Feature {
 /// via [`Features::builder`] to override explicitly.
 ///
 /// The default set — `Init`, `Version`, `Update`, `Docs`, `Mcp`,
-/// `Doctor` — matches the Cargo default feature set of the `rtb`
-/// umbrella crate; runtime gating only hides commands that are already
-/// compiled in.
+/// `Doctor`, `Credentials`, `Telemetry`, `Config` — matches the
+/// Cargo default feature set of the `rtb` umbrella crate; runtime
+/// gating only hides commands that are already compiled in.
 #[derive(Debug, Clone)]
 pub struct Features {
     enabled: HashSet<Feature>,
@@ -116,7 +121,8 @@ pub struct FeaturesBuilder {
 
 impl FeaturesBuilder {
     /// Start a builder pre-populated with the default feature set:
-    /// `Init`, `Version`, `Update`, `Docs`, `Mcp`, `Doctor`.
+    /// `Init`, `Version`, `Update`, `Docs`, `Mcp`, `Doctor`,
+    /// `Credentials`, `Telemetry`, `Config`.
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -127,6 +133,9 @@ impl FeaturesBuilder {
                 Feature::Docs,
                 Feature::Mcp,
                 Feature::Doctor,
+                Feature::Credentials,
+                Feature::Telemetry,
+                Feature::Config,
             ]
             .into_iter()
             .collect(),

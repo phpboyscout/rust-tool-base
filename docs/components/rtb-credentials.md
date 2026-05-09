@@ -135,6 +135,44 @@ The precedence chain is normative — do not reorder:
    when `CI=true`.
 4. `cref.fallback_env` → `std::env::var(name)`.
 
+### `CredentialBearing`
+
+```rust
+pub trait CredentialBearing {
+    fn credentials(&self) -> Vec<(&'static str, &CredentialRef)>;
+}
+
+impl CredentialBearing for () { /* yields empty */ }
+```
+
+Introspection seam used by `rtb-cli`'s v0.4 `credentials` subtree
+to enumerate the `CredentialRef`s a downstream tool's config knows
+about. Tools implement the trait on their typed config in five
+lines:
+
+```rust
+impl CredentialBearing for MyConfig {
+    fn credentials(&self) -> Vec<(&'static str, &CredentialRef)> {
+        vec![
+            ("anthropic", &self.anthropic.api),
+            ("github",    &self.github.token),
+        ]
+    }
+}
+```
+
+The `&'static str` name is the human-friendly identifier surfaced
+by `credentials list` and accepted as the argument to
+`credentials add / remove / test`. The trait is **object-safe**
+(slice 2 stores a `Box<dyn CredentialBearing>`-erased provider on
+`App`), and the blanket impl for `()` keeps existing `App<()>`
+sites compiling unchanged.
+
+A `#[derive(CredentialBearing)]` proc-macro is deferred to v0.5;
+the explicit five-line impl is the v0.4 contract — see
+[v0.4 scope §4.1](../development/specs/2026-05-06-v0.4-scope.md)
+and [`rtb-cli` ops v0.1 §2.2](../development/specs/2026-05-06-rtb-cli-ops-v0.1.md).
+
 ### `CredentialError`
 
 ```rust
@@ -159,7 +197,10 @@ All variants carry `rtb::credentials::*` diagnostic codes.
 | `KeyringStore`, `EnvStore`, `LiteralStore`, `MemoryStore` | structs | 0.1.0 |
 | `CredentialRef`, `KeychainRef` | structs (deserialize-only) | 0.1.0 |
 | `Resolver` | struct | 0.1.0 |
+| `Resolver::probe` | method | 0.4.0 |
+| `ResolutionSource`, `ResolutionOutcome` | enums | 0.4.0 |
 | `CredentialError::{NotFound, LiteralRefusedInCi, Keychain, ReadOnly, Io}` | enum | 0.1.0 |
+| `CredentialBearing` | trait + blanket impl for `()` | 0.4.0 |
 | Re-exports: `SecretString`, `ExposeSecret` | from `secrecy` | 0.1.0 |
 
 ## Usage patterns

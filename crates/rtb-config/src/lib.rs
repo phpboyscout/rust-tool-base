@@ -49,6 +49,8 @@
 
 pub mod config;
 pub mod error;
+#[cfg(feature = "mutable")]
+mod mutable;
 #[cfg(feature = "hot-reload")]
 pub mod watch;
 

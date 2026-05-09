@@ -31,17 +31,27 @@
 //! See `docs/development/specs/2026-04-22-rtb-cli-v0.1.md` for the
 //! authoritative contract.
 
-#![forbid(unsafe_code)]
+// `deny` (not `forbid`) so submodules registering into
+// `linkme::distributed_slice` (the `credentials` and similar
+// subtrees) can `#![allow(unsafe_code)]` for the
+// `#[link_section]` attribute the macro emits. No hand-rolled
+// `unsafe` blocks exist in this crate.
+#![deny(unsafe_code)]
 
 pub mod application;
 pub mod builtins;
+pub mod config_cmd;
+pub mod credentials;
 pub mod health;
 pub mod init;
+pub mod render;
 pub mod runtime;
+pub mod telemetry;
 
 pub use application::{Application, ApplicationBuilder};
 pub use health::{HealthCheck, HealthReport, HealthStatus};
 pub use init::Initialiser;
+pub use render::{output, OutputMode};
 
 /// Glob-importable convenience prelude for downstream `fn main()`.
 pub mod prelude {

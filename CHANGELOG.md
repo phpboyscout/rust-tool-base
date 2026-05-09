@@ -12,6 +12,139 @@ potentially breaking. See `docs/development/specs/rust-tool-base.md`
 
 ## [Unreleased]
 
+### Added — `rtb-cli` ops subtree v0.1 (slice 2 of v0.4)
+
+- **`CredentialBearing` trait** in `rtb-credentials`. Downstream
+  tools implement it on their typed config in five lines; `rtb-cli`'s
+  upcoming `credentials list / test / doctor` subcommands walk the
+  resulting `Vec` to enumerate credentials. Object-safe; blanket
+  impl for `()` keeps existing `App<()>` sites compiling unchanged.
+  See [v0.4 scope §4.1](docs/development/specs/2026-05-06-v0.4-scope.md)
+  for the design rationale and the alternatives that were rejected
+  (serde visitor, schemars-driven walk).
+- **`mutable` Cargo feature on `rtb-config`** — adds
+  `Config::schema()` (returns the JSON Schema for `C` as a
+  `serde_json::Value`) and `Config::write(&path)` (writes the
+  merged value to disk; format chosen by extension —
+  `.yml` / `.yaml` → YAML, `.toml` → TOML, `.json` → JSON, default
+  YAML). Backs the upcoming `config schema / set / validate`
+  subcommands. Default-off; pulls in `schemars` / `serde_yaml` /
+  `toml` only for tools that opt in. Two new `ConfigError`
+  variants: `Write(String)`, `Schema(String)` — both
+  unconditionally present in the enum, only constructable behind
+  the feature.
+- **`Feature::Credentials`** runtime variant on `rtb_app::Feature`,
+  default-enabled. Gates the upcoming `credentials list / add /
+  remove / test / doctor` subcommands.
+- **`ToolMetadata::telemetry_notice`** — new optional
+  `&'static str` field, additive (existing builder chains compile
+  unchanged). Read by `rtb-cli`'s `telemetry enable` to print a
+  tool-specific privacy notice; `None` falls back to a generic
+  message.
+- **`rtb_app::prelude` re-exports `CredentialBearing` and
+  `CredentialRef`** so downstream tools writing the trait impl
+  don't need `rtb-credentials` as a direct dependency.
+- **`rtb_telemetry::consent` module** — persisted-consent
+  primitives (`Consent`, `ConsentState`, `read`, `write`, `reset`)
+  for the upcoming `telemetry status / enable / disable / reset`
+  subtree. File lives at `<config_dir>/<tool>/consent.toml` with
+  an explicit schema version for forward compatibility. `Consent`
+  records ISO-8601 (RFC 3339) UTC timestamps for every decision.
+  `From<ConsentState> for CollectionPolicy` maps `Enabled` →
+  `Enabled` and both `Disabled` / `Unset` → `Disabled` (opt-in
+  remains the default).
+- **`rtb_cli::render` module** — `OutputMode` (clap-parseable
+  `Text` default / `Json`) and `render::output(mode, rows)` that
+  wraps `rtb_tui::render_table` and `rtb_tui::render_json`. New
+  global `--output text|json` flag declared once at the clap root
+  with `Arg::global(true)` so it propagates to every subcommand
+  automatically. `OutputMode::from_args_os()` re-parses the flag
+  for `subcommand_passthrough` subtrees. Subcommands that don't
+  produce structured data (`init`, `update run`, `mcp serve`)
+  silently ignore the flag.
+- **`App::credentials()` + `App::credentials_provider`** field
+  and a new `rtb_app::credentials::CredentialProvider` trait
+  (type-erased dual of `CredentialBearing` for storage on `App`).
+  Wired by `Application::builder().credentials_from(provider)`,
+  where `provider: Arc<T>` is anything that implements
+  `CredentialBearing`. Tools that don't wire a provider see
+  `App::credentials()` return an empty `Vec` — the upcoming
+  `credentials list` subcommand prints an empty table rather than
+  erroring out. `NoCredentials` ships as a convenience zero-sized
+  type for explicit "no credentials configured" wiring.
+- **`Resolver::probe`** + **`ResolutionSource`** + **`ResolutionOutcome`**
+  on `rtb-credentials`. `probe` walks the same chain as `resolve`
+  but returns the precedence layer (or `Missing` /
+  `LiteralRefusedInCi`) without surfacing the secret. Used by
+  `credentials list` and `doctor` to report where each credential
+  comes from; uses one keychain round-trip per ref but never
+  prints secrets to the operator's terminal.
+- **`credentials` CLI subtree** (`list / add / remove / test /
+  doctor`) registered on `Feature::Credentials` (default-on).
+  `list` prints a `tabled` table or JSON array of declared
+  credentials and the layer the resolver would pick; `test` calls
+  `Resolver::probe` for one named credential; `doctor` aggregates
+  `test` over all declared credentials and exits non-zero on any
+  miss; `add` and `remove` are interactive (`add` uses an
+  `inquire::Password` masked prompt; refuses literal-only refs per
+  C5 resolution; `remove` errors hard on literal-only refs per C1
+  resolution). `--output text|json` is honoured by the structured
+  leaves; the interactive ones ignore it.
+- **`rtb_cli::render::strip_global_output`** helper — removes the
+  global `--output` flag from an `args_os()` vector before a
+  `subcommand_passthrough` subtree re-parses with its own clap
+  definition. clap's outer `global = true` doesn't reach
+  passthrough subtrees because their post-name tokens are captured
+  as `trailing_var_arg`, so the inner parser would otherwise
+  reject the flag as unknown.
+- **`telemetry` CLI subtree** (`status / enable / disable / reset`)
+  registered on `Feature::Telemetry`. `status` reports current
+  state, source (consent-file / env-override / default), decision
+  timestamp, derived `CollectionPolicy`, and the consent-file path
+  — dual-mode (text/JSON). `enable` writes the consent file and
+  prints `ToolMetadata::telemetry_notice` when set; **refuses
+  under `CI=true`** per C3 resolution. `disable` / `reset` write
+  / remove the file; `reset` is idempotent. The state-resolution
+  chain (consent file → `MYTOOL_TELEMETRY` env override → default
+  `Disabled`) is documented in the subtree's module docs.
+- **`Feature::Telemetry`** moves into the default-on set alongside
+  the new subtree. Tools that compile-out telemetry (the `telemetry`
+  Cargo feature on `rtb` is off-by-default) see no subtree
+  registered; `Features::builder().disable(Feature::Telemetry)`
+  also hides it at runtime for tools that compile it in but want
+  it suppressed for a particular invocation.
+- **`config` CLI subtree extension** — the bare `config` command
+  becomes a `subcommand_passthrough` subtree. Subcommands:
+  `show` (the v0.1 placeholder for tools without typed config —
+  unchanged), `get <jsonpath>`, `set <jsonpath> <value>
+  [--config-file PATH]`, `schema`, and `validate [--file PATH]`.
+  Bare `config` defaults to `show` for backward compatibility.
+  `get` / `set` walk the canonical user-file
+  (`<config_dir>/<tool>/config.yaml`) as a `serde_json::Value`;
+  format is YAML by default, TOML for `.toml`, JSON for `.json`,
+  preserved on round-trip. Path syntax accepts both
+  `serde_json`-pointer (`/foo/bar`) and dotted (`.foo.bar`) forms.
+  `set` parses values as JSON with a string fallback so bare
+  scalars don't need quoting. `schema` errors with a help-laden
+  message until typed-config integration (`App<C>`) lands; `validate`
+  format-parses the candidate file at v0.4 (full schema validation
+  ships with `App<C>`).
+- **`Feature::Config`** moves into the default-on set alongside
+  the extended subtree.
+- The legacy `ConfigShowCmd` exported from `rtb_cli::builtins` is
+  removed; the new `config_cmd::ConfigCmd` registers in its place.
+  Downstream tools that referenced `builtins::ConfigShowCmd`
+  directly (none in the workspace) need to update the import.
+- **`examples/minimal`** now wires a sample `MyConfig` struct
+  with two `CredentialBearing` declarations (`anthropic` +
+  `github`, both env-with-fallback), demonstrating
+  `Application::builder().credentials_from(Arc::new(my_config))`.
+  The smoke suite gains end-to-end coverage of `credentials list`,
+  `credentials test` (env-resolves, missing-resolves, unknown
+  errors), and `credentials doctor` (per-credential aggregation
+  and overall non-zero on any miss). Brings the example to 24
+  smoke tests.
+
 ### Added — `rtb-tui` v0.1 (slice 1 of v0.4)
 
 - **`rtb-tui`** flips from a stub to a real crate. Three building

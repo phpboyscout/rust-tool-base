@@ -21,6 +21,11 @@ default = []
 # Enables `Config::watch_files()` — background file watcher that
 # calls `reload()` on debounced change events.
 hot-reload = ["dep:notify", "dep:notify-debouncer-full"]
+# Enables `Config::schema()` and `Config::write()` — the
+# rtb-cli v0.4 `config get / set / schema / validate` subcommands.
+# Default-off so tools that don't need write or schema export don't
+# pay the schemars / serde_yaml / toml dependency weight.
+mutable = ["dep:schemars", "dep:serde_json", "dep:serde_yaml", "dep:toml"]
 
 [dependencies]
 figment = { workspace = true }
@@ -35,7 +40,11 @@ tokio = { workspace = true }
 # Gated on `hot-reload`.
 notify = { workspace = true, optional = true }
 notify-debouncer-full = { workspace = true, optional = true }
-# Schema export (planned) will add: schemars.
+# Gated on `mutable`.
+schemars = { workspace = true, optional = true }
+serde_json = { workspace = true, optional = true }
+serde_yaml = { workspace = true, optional = true }
+toml = { workspace = true, optional = true }
 
 [dev-dependencies]
 cucumber = { workspace = true }

@@ -12,6 +12,7 @@
 
 pub mod app;
 pub mod command;
+pub mod credentials;
 pub mod features;
 pub mod metadata;
 pub mod version;
@@ -28,4 +29,11 @@ pub mod prelude {
     pub use crate::features::{Feature, Features};
     pub use crate::metadata::{HelpChannel, ReleaseSource, ToolMetadata};
     pub use crate::version::VersionInfo;
+
+    /// Re-exported from `rtb-credentials` so downstream tools that
+    /// implement the v0.4 `credentials` subtree don't need to add
+    /// the credentials crate to their direct dep list.
+    pub use rtb_credentials::{CredentialBearing, CredentialRef};
+
+    pub use crate::credentials::{CredentialProvider, NoCredentials};
 }
