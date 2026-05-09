@@ -171,7 +171,7 @@ runtime `Features` set.
 | `version` | `Version` | Prints name/semver/commit/date + target triple. |
 | `doctor` | `Doctor` | Runs `HEALTH_CHECKS`; exits non-zero if any `Fail`. |
 | `init` | `Init` | Iterates `INITIALISERS`; skips already-configured. |
-| `config` | `Config` | v0.4 — moved into the default-on set. Subcommands `show` (default) / `get` / `set` / `schema` / `validate`. Operates on the canonical user-file path `<config_dir>/<tool>/config.yaml` (override via `--config-file PATH`). |
+| `config` | `Config` | v0.4 — moved into the default-on set. Subcommands `show` (default) / `get` / `set` / `schema` / `validate`. Schema-aware paths (since 0.4.1) light up when the host tool calls `Application::builder().config<C>(...)` — `show` renders the merged typed value, `schema` prints the JSON Schema for `C`, `validate` validates the merged value (or `--config-file <PATH>`) against it, `set` validates post-write before persisting. The v0.4 untyped path operates against the canonical user-file `<config_dir>/<tool>/config.yaml` (override via `--config-file PATH`). |
 | `update` | `Update` | Registered by [`rtb-update`](rtb-update.md) v0.1. Subcommands `check` / `run`. |
 | `docs` | `Docs` | Registered by [`rtb-docs`](rtb-docs.md) v0.1. Subcommands `list` / `show` / `browse` / `serve` / `ask`. |
 | `mcp` | `Mcp` | Registered by [`rtb-mcp`](rtb-mcp.md) v0.1. Subcommands `serve` / `list`. |
@@ -259,6 +259,7 @@ Subcommands without structured output (`init`, `update run`,
 | `credentials::CredentialsCmd` (registered) | struct | 0.4.0 |
 | `telemetry::TelemetryCmd` (registered) | struct | 0.4.0 |
 | `config_cmd::ConfigCmd` (registered) | struct | 0.4.0 |
+| `ApplicationBuilder::config<C>` | builder step (typed-config wiring) | 0.4.1 |
 | `prelude` | module (re-exports) | 0.1.0 |
 
 ## Deferred to later versions
@@ -266,10 +267,12 @@ Subcommands without structured output (`init`, `update run`,
 - `#[rtb::command]` attribute macro for less-boilerplate command
   authoring — once patterns stabilise.
 - `--output json` output envelope — needs per-command DTO design.
-- `config set` / `config schema` / `config validate` — waits on
-  richer `rtb-config` API.
-- `telemetry enable/disable/status/reset` — waits on `rtb-telemetry`
-  v0.2.
+- ~~`config set` / `config schema` / `config validate` — waits on
+  richer `rtb-config` API.~~ Shipped at v0.4 (untyped fallback)
+  and lit up with schema-aware behaviour at v0.4.1 — see
+  [v0.4.1 scope addendum](../development/specs/2026-05-09-v0.4.1-scope.md).
+- ~~`telemetry enable/disable/status/reset` — waits on `rtb-telemetry`
+  v0.2.~~ Shipped at v0.4.
 
 ## Consumers
 
