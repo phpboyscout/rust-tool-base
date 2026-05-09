@@ -735,18 +735,26 @@ Minimum shippable scope:
   `mcp` stubs removed from `rtb-cli`. See
   [`2026-04-23-v0.2-scope.md`](2026-04-23-v0.2-scope.md) for scope
   rationale.
-- **0.3** — `rtb-ai` v0.1 (genai + Anthropic-direct for caching),
-  `rtb-mcp` v0.1 (`rmcp` SDK; commands self-register as MCP tools
-  via `Command::mcp_exposed`). Structured output via `schemars` +
-  `jsonschema`. See [`2026-05-01-v0.3-scope.md`](2026-05-01-v0.3-scope.md).
-- **0.4** — `rtb-tui` v0.1 (`Wizard`, table/json render helpers,
-  TTY-aware `Spinner`); `rtb-cli` `credentials` / `telemetry` /
-  extended `config` subtrees; global `--output text|json` flag.
-  `App` gains `credentials_provider` + `App::credentials()`;
-  `rtb-credentials` adds `CredentialBearing` + `Resolver::probe`;
-  `rtb-config` adds the `mutable` feature with `Config::schema` /
-  `Config::write`; `rtb-telemetry` adds the persisted `consent`
-  module. See [`2026-05-06-v0.4-scope.md`](2026-05-06-v0.4-scope.md).
+- **0.3.0** (2026-05-09) — the "operator surface" release. Bundles
+  framework-spec milestones **0.3** and **0.4** into a single
+  shipped workspace version:
+  - **Spec milestone 0.3** — `rtb-ai` v0.1 (genai +
+    Anthropic-direct for caching), `rtb-mcp` v0.1 (`rmcp` SDK;
+    commands self-register as MCP tools via `Command::mcp_exposed`).
+    Structured output via `schemars` + `jsonschema`.
+    See [`2026-05-01-v0.3-scope.md`](2026-05-01-v0.3-scope.md).
+  - **Spec milestone 0.4** — `rtb-tui` v0.1 (`Wizard`, table/json
+    render helpers, TTY-aware `Spinner`); `rtb-cli` `credentials` /
+    `telemetry` / extended `config` subtrees; global
+    `--output text|json` flag. `App` gains `credentials_provider`
+    + `App::credentials()`; `rtb-credentials` adds
+    `CredentialBearing` + `Resolver::probe`; `rtb-config` adds
+    the `mutable` feature with `Config::schema` / `Config::write`;
+    `rtb-telemetry` adds the persisted `consent` module.
+    See [`2026-05-06-v0.4-scope.md`](2026-05-06-v0.4-scope.md).
+  - Schemars 0.8 → 1.x and tantivy 0.22 → 0.26 upstream bumps
+    landed on develop after release; they ship in the next
+    workspace version.
 
 ### Pending
 - **0.5** — `rtb-vcs` v0.2 (git-operations slice: the `Repo` type,

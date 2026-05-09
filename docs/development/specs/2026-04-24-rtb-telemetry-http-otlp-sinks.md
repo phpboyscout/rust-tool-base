@@ -1,6 +1,6 @@
 ---
 title: rtb-telemetry — HttpSink + OtlpSink (v0.2 addendum)
-status: APPROVED
+status: IMPLEMENTED
 date: 2026-04-24
 authors: [Matt Cockayne]
 crate: rtb-telemetry
