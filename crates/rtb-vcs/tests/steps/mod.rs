@@ -2,6 +2,8 @@
 
 pub mod github_steps;
 pub mod registry_steps;
+#[cfg(feature = "git")]
+pub mod repo_steps;
 
 use std::sync::Arc;
 
@@ -85,4 +87,27 @@ pub struct VcsWorld {
     pub mock_server: Option<wiremock::MockServer>,
     /// Latest error produced by a When step.
     pub last_error: Option<ProviderError>,
+
+    // ---------------------------------------------------------------
+    // v0.5 git-ops slice — Repo lifecycle scenarios
+    // ---------------------------------------------------------------
+    /// Tempdir backing the Repo-lifecycle scenarios. Kept alive on
+    /// the World so the on-disk directory survives across steps.
+    #[cfg(feature = "git")]
+    pub tempdir: Option<tempfile::TempDir>,
+    /// Path the most recent Given step operates on. Decoupled from
+    /// `tempdir` because some scenarios (R3 — non-repo path) reuse
+    /// the tempdir's path without an init step.
+    #[cfg(feature = "git")]
+    pub repo_path: Option<std::path::PathBuf>,
+    /// The Repo instance produced by an init or open step.
+    #[cfg(feature = "git")]
+    pub repo: Option<rtb_vcs::git::Repo>,
+    /// Status snapshot captured by `When I query its status`.
+    #[cfg(feature = "git")]
+    pub status: Option<rtb_vcs::git::RepoStatus>,
+    /// Latest `RepoError` produced by a When step. Separate from
+    /// `last_error` (which carries `ProviderError`).
+    #[cfg(feature = "git")]
+    pub last_repo_error: Option<rtb_vcs::git::RepoError>,
 }

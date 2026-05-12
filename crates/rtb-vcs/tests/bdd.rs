@@ -6,7 +6,14 @@
     clippy::needless_pass_by_ref_mut,
     clippy::items_after_statements,
     clippy::too_many_lines,
-    clippy::trivial_regex
+    clippy::trivial_regex,
+    // Cucumber step macros require `async fn` even when the body
+    // doesn't await; the lint flags these as unused.
+    clippy::unused_async,
+    // Test-side asserts include `{:?}` for diagnostic context; the
+    // inlined-args lint pushes for `{var:?}` everywhere — fine in
+    // production code but not worth the churn in test steps.
+    clippy::uninlined_format_args
 )]
 
 mod steps;
