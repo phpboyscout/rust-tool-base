@@ -112,7 +112,22 @@ zeroize = "1"
 keyring = { version = "3", default-features = false, features = ["apple-native", "windows-native", "linux-native"] }
 
 # VCS
-gix = { version = "0.72", default-features = false, features = ["blocking-network-client", "blocking-http-transport-reqwest-rust-tls"] }
+gix = { version = "0.72", default-features = false, features = [
+    "blocking-network-client",
+    "blocking-http-transport-reqwest-rust-tls",
+    # v0.5 git-ops slice: status + dirwalk + parallel (for Send on
+    # ThreadSafeRepository). `extras` pulls in status + dirwalk +
+    # excludes + attributes + interrupt + credentials, which together
+    # are what `Repository::status()` actually needs to compile.
+    "parallel",
+    "extras",
+] }
+# `gix-testtools` versions track `gix`; 0.16.x matches gix 0.72. Dev-only.
+gix-testtools = "0.16"
+# `git2` is the v0.5 `git2-fallback` feature dep — only pulled in when
+# the fallback is enabled (push slice). Declared in the workspace so
+# the version is consistent across any crate that might enable it.
+git2 = { version = "0.20", default-features = false }
 octocrab = "0.47"
 gitlab = "0.1710"
 

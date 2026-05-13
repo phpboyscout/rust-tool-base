@@ -43,6 +43,11 @@
 pub mod config;
 pub mod release;
 
+// v0.5 git-operations slice — entire module gated on the `git` feature.
+// See `docs/development/specs/2026-05-11-v0.5-scope.md`.
+#[cfg(feature = "git")]
+pub mod git;
+
 // Shared HTTP helpers for the REST-API backends. `pub(crate)` —
 // downstream custom backends roll their own.
 #[cfg(feature = "_http")]

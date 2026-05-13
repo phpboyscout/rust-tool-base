@@ -19,9 +19,10 @@ workspace = true
 [features]
 # Built-in backends are feature-gated so a downstream tool that only
 # targets one provider doesn't pay the compile-cost of the others.
-# GitHub is default-on; the other five become default-on as their
-# implementations land.
-default = ["github", "gitlab", "gitea", "codeberg", "direct", "bitbucket"]
+# `git` is default-on per v0.5 scope A7 — the framework spec promises
+# `Repo`; tools with hard binary-size budgets disable it via
+# `default-features = false`.
+default = ["github", "gitlab", "gitea", "codeberg", "direct", "bitbucket", "git"]
 # Each backend is feature-gated so a downstream tool that only targets
 # one provider can trim the compile-cost of the others.
 github = ["_http"]
@@ -33,6 +34,16 @@ gitea = ["_http"]
 codeberg = ["gitea"]
 direct = ["_http"]
 bitbucket = ["_http"]
+# v0.5 git-operations slice. Pulls in `gix` for the `Repo` type and
+# `rtb-credentials` for auth (Repo::clone / fetch / push call
+# `Resolver::resolve` per A2). See
+# `docs/development/specs/2026-05-11-v0.5-scope.md`.
+git = ["dep:gix", "dep:rtb-credentials"]
+# Opt-in fallback for ops gix can't yet do — push, primarily. Pulls
+# libgit2 (C dependency); kept opt-in per A4 so cross-compile lanes
+# (musl + windows) stay clean for the majority of consumers. Implies
+# `git` because the push impl lives inside the `git/` module.
+git2-fallback = ["git", "dep:git2"]
 # Enables the testcontainers-backed integration-tests gated with
 # `#[cfg(feature = "integration")]`. Not default-on: requires Docker.
 integration = []
@@ -77,6 +88,13 @@ futures-util = { version = "0.3", optional = true }
 # into `AsyncRead` for streaming asset downloads.
 tokio-util = { version = "0.7", features = ["io"], optional = true }
 
+# v0.5 git-operations slice — gated on the `git` feature. gix is the
+# primary backend; rtb-credentials handles auth resolution.
+gix = { workspace = true, optional = true }
+rtb-credentials = { path = "../rtb-credentials", version = "0.3.0", optional = true }
+# `git2` is gated on the `git2-fallback` feature (push slice).
+git2 = { workspace = true, optional = true }
+
 [dev-dependencies]
 cucumber = { workspace = true }
 serde_yaml = { workspace = true }
@@ -86,3 +104,7 @@ serde_json = { workspace = true }
 reqwest = { workspace = true, features = ["multipart"] }
 wiremock = { workspace = true }
 testcontainers = { workspace = true }
+# v0.5 git-ops tests use `gix-testtools` for fixture-repo creation
+# per A5.
+gix-testtools = { workspace = true }
+tempfile = { workspace = true }
