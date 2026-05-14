@@ -3,6 +3,8 @@
 pub mod github_steps;
 pub mod registry_steps;
 #[cfg(feature = "git")]
+pub mod repo_read_paths_steps;
+#[cfg(feature = "git")]
 pub mod repo_steps;
 
 use std::sync::Arc;
@@ -110,4 +112,14 @@ pub struct VcsWorld {
     /// `last_error` (which carries `ProviderError`).
     #[cfg(feature = "git")]
     pub last_repo_error: Option<rtb_vcs::git::RepoError>,
+
+    // ---------------------------------------------------------------
+    // v0.5 commit 2 — read-path scenarios (walk / diff / blame)
+    // ---------------------------------------------------------------
+    /// Commit summaries captured by a `walk` step.
+    #[cfg(feature = "git")]
+    pub walked: Vec<String>,
+    /// Structured diff captured by a `diff` step.
+    #[cfg(feature = "git")]
+    pub diff: Option<rtb_vcs::git::Diff>,
 }
