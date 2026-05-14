@@ -106,6 +106,26 @@ pub enum RepoError {
         cause: String,
     },
 
+    /// Commit-graph walk failure. Surfaces in `Repo::walk` for
+    /// failures that aren't [`RepoError::RevspecNotFound`] (gix
+    /// internal error, object-store I/O, unsupported revspec kind).
+    #[error("could not walk commits: {cause}")]
+    #[diagnostic(code(rtb_vcs::git::walk_failed))]
+    WalkFailed {
+        /// Stringified backend error.
+        cause: String,
+    },
+
+    /// Tree-diff failure. Surfaces in `Repo::diff` for failures
+    /// that aren't [`RepoError::RevspecNotFound`] (gix internal
+    /// error reading trees, blob diffing).
+    #[error("could not diff trees: {cause}")]
+    #[diagnostic(code(rtb_vcs::git::diff_failed))]
+    DiffFailed {
+        /// Stringified backend error.
+        cause: String,
+    },
+
     /// Push transport / refs failure. Only reachable when the
     /// `git2-fallback` Cargo feature is enabled.
     #[error("could not push `{refspec}` to `{remote}`: {cause}")]

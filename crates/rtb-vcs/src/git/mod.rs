@@ -36,14 +36,18 @@
 
 use std::path::{Path, PathBuf};
 
+pub use self::diff::{ChangeKind, Diff, FileChange};
 pub use self::error::RepoError;
 pub use self::init::InitOptions;
 pub use self::status::RepoStatus;
+pub use self::walk::{CommitInfo, CommitWalk};
 
 pub(crate) mod auth;
+mod diff;
 mod error;
 mod init;
 mod status;
+mod walk;
 
 /// A repository handle. Cheap to clone — every field is either
 /// `Arc`-wrapped (the gix handle) or a small owned value.

@@ -5700,6 +5700,8 @@ dependencies = [
  "async-trait",
  "bytes",
  "cucumber",
+ "futures",
+ "futures-core",
  "futures-util",
  "git2",
  "gix",
