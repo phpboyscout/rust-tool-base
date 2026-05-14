@@ -146,7 +146,7 @@ rmcp = { version = "0.16", default-features = false, features = ["server", "macr
 
 # Utilities
 directories = "5"
-machine-uid = "0.5"
+machine-uid = "0.6"
 sha2 = "0.10"
 blake3 = "1"
 tar = "0.4"
