@@ -43,9 +43,9 @@ pub struct CommitInfo {
 
 /// Async stream over the commits matched by a [`Repo::walk`] call.
 ///
-/// Consume via [`futures::StreamExt`]; the underlying gix walk
-/// runs on a `spawn_blocking` task that's released when this
-/// stream is dropped.
+/// Consume via the `futures::StreamExt` extension trait; the
+/// underlying gix walk runs on a `spawn_blocking` task that's
+/// released when this stream is dropped.
 pub struct CommitWalk {
     rx: mpsc::Receiver<Result<CommitInfo, RepoError>>,
 }
