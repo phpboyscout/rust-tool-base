@@ -36,6 +36,7 @@
 
 use std::path::{Path, PathBuf};
 
+pub use self::blame::{Blame, BlameLine};
 pub use self::diff::{ChangeKind, Diff, FileChange};
 pub use self::error::RepoError;
 pub use self::init::InitOptions;
@@ -43,6 +44,7 @@ pub use self::status::RepoStatus;
 pub use self::walk::{CommitInfo, CommitWalk};
 
 pub(crate) mod auth;
+mod blame;
 mod diff;
 mod error;
 mod init;

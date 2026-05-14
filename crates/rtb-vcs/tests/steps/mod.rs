@@ -122,4 +122,7 @@ pub struct VcsWorld {
     /// Structured diff captured by a `diff` step.
     #[cfg(feature = "git")]
     pub diff: Option<rtb_vcs::git::Diff>,
+    /// Blame snapshot captured by a `blame` step.
+    #[cfg(feature = "git")]
+    pub blame: Option<rtb_vcs::git::Blame>,
 }

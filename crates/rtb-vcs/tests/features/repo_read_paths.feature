@@ -1,10 +1,8 @@
-Feature: rtb-vcs — Repo read paths (walk / diff)
-  v0.5 commit 2. Downstream tools need to walk the commit graph
-  (release-note summarisation) and compare tree states (scaffolder
-  regeneration drift detection). Blame ships separately in commit
-  2b (see spec §8) because gix 0.72 exposes blame only via its raw
-  re-export — splitting it out keeps this commit focused on
-  gix::Repository-method APIs.
+Feature: rtb-vcs — Repo read paths (walk / diff / blame)
+  v0.5 commits 2 and 2b. Downstream tools need to walk the commit
+  graph (release-note summarisation), compare tree states
+  (scaffolder regeneration drift detection), and attribute lines
+  to commits (audit / code-review tools).
 
   Scenario: W1 — walk(HEAD) yields commits newest-first
     Given a 3-commit linear-history fixture authored by "alice"
@@ -32,3 +30,9 @@ Feature: rtb-vcs — Repo read paths (walk / diff)
     When I diff "HEAD~1" and "HEAD"
     Then the diff contains "README.md" as Deleted
     And the diff contains "CHANGELOG.md" as Added
+
+  Scenario: BL1 — blame attributes lines to the introducing commit
+    Given a 3-commit linear-history fixture authored by "alice"
+    When I blame "LICENSE" at "HEAD"
+    Then every line is attributed to "alice"
+    And every line maps to the commit at "HEAD~1"
