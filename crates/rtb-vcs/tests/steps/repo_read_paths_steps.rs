@@ -61,6 +61,13 @@ async fn when_diff(world: &mut VcsWorld, a: String, b: String) {
     world.diff = Some(diff);
 }
 
+#[when(regex = r#"^I blame "([^"]+)" at "([^"]+)"$"#)]
+async fn when_blame(world: &mut VcsWorld, path: String, revspec: String) {
+    let repo = world.repo.as_ref().expect("repo set");
+    let blame = repo.blame(Path::new(&path), &revspec).await.expect("blame");
+    world.blame = Some(blame);
+}
+
 // ---------------------------------------------------------------------
 // Thens
 // ---------------------------------------------------------------------
@@ -82,6 +89,30 @@ async fn then_revspec_not_found(world: &mut VcsWorld, revspec: String) {
         matches!(err, RepoError::RevspecNotFound { revspec: r } if r == &revspec),
         "got {err:?}"
     );
+}
+
+#[then(regex = r#"^every line is attributed to "([^"]+)"$"#)]
+async fn then_blame_author(world: &mut VcsWorld, author: String) {
+    let blame = world.blame.as_ref().expect("blame set");
+    assert!(!blame.lines.is_empty(), "blame should be non-empty");
+    for line in &blame.lines {
+        assert_eq!(line.author_name, author);
+    }
+}
+
+#[then(regex = r#"^every line maps to the commit at "([^"]+)"$"#)]
+async fn then_blame_commit(world: &mut VcsWorld, revspec: String) {
+    let blame = world.blame.as_ref().expect("blame set");
+    let path = world.repo_path.as_ref().expect("repo_path set");
+    let out = Command::new("git")
+        .args(["rev-parse", &revspec])
+        .current_dir(path)
+        .output()
+        .expect("rev-parse");
+    let oid = String::from_utf8(out.stdout).expect("utf8").trim().to_string();
+    for line in &blame.lines {
+        assert_eq!(line.commit_id, oid, "every line should map to {revspec}");
+    }
 }
 
 #[then(regex = r#"^the diff contains "([^"]+)" as ([A-Za-z]+)$"#)]

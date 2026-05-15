@@ -122,6 +122,9 @@ gix = { version = "0.72", default-features = false, features = [
     # are what `Repository::status()` actually needs to compile.
     "parallel",
     "extras",
+    # v0.5 commit 2b: enables the `gix::blame` re-export of gix-blame
+    # for `Repo::blame`.
+    "blame",
 ] }
 # `gix-testtools` versions track `gix`; 0.16.x matches gix 0.72. Dev-only.
 gix-testtools = "0.16"
