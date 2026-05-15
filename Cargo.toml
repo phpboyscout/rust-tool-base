@@ -127,7 +127,7 @@ gix = { version = "0.72", default-features = false, features = [
     "blame",
 ] }
 # `gix-testtools` versions track `gix`; 0.16.x matches gix 0.72. Dev-only.
-gix-testtools = "0.16"
+gix-testtools = "0.18"
 # `git2` is the v0.5 `git2-fallback` feature dep — only pulled in when
 # the fallback is enabled (push slice). Declared in the workspace so
 # the version is consistent across any crate that might enable it.
