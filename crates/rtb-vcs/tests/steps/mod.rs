@@ -6,6 +6,8 @@ pub mod registry_steps;
 pub mod repo_read_paths_steps;
 #[cfg(feature = "git")]
 pub mod repo_steps;
+#[cfg(feature = "git")]
+pub mod repo_write_paths_steps;
 
 use std::sync::Arc;
 
@@ -125,4 +127,18 @@ pub struct VcsWorld {
     /// Blame snapshot captured by a `blame` step.
     #[cfg(feature = "git")]
     pub blame: Option<rtb_vcs::git::Blame>,
+
+    // ---------------------------------------------------------------
+    // v0.5 commit 4 — write-path scenarios (clone / commit)
+    // ---------------------------------------------------------------
+    /// Upstream tempdir for clone scenarios. Distinct from `tempdir`
+    /// because the clone destination is a *different* dir.
+    #[cfg(feature = "git")]
+    pub upstream_tempdir: Option<tempfile::TempDir>,
+    /// Clone destination directory.
+    #[cfg(feature = "git")]
+    pub clone_dst: Option<std::path::PathBuf>,
+    /// Commit OID captured by a `commit` step.
+    #[cfg(feature = "git")]
+    pub commit_oid: Option<String>,
 }
